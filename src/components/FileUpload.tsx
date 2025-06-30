@@ -20,16 +20,24 @@ interface ScanResult {
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
 
-// Helper function to convert ArrayBuffer to Base64 string
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-    let binary = '';
-    const bytes = new Uint8Array(buffer);
-    const len = bytes.byteLength;
-    for (let i = 0; i < len; i++) {
-        binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary);
-}
+// Helper function to read file as Base64 string using FileReader
+const readFileAsBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      // The result is a data URL (e.g., "data:image/png;base64,iVBORw0K...").
+      // We need to extract only the base64 part after the comma.
+      const base64String = (reader.result as string).split(',')[1];
+      if (base64String) {
+        resolve(base64String);
+      } else {
+        reject(new Error("Failed to extract base64 string from file."));
+      }
+    };
+    reader.onerror = (error) => reject(error);
+    reader.readAsDataURL(file);
+  });
+};
 
 const FileUpload: React.FC = () => {
   const [files, setFiles] = useState<File[]>([]);
@@ -77,9 +85,8 @@ const FileUpload: React.FC = () => {
         );
         toast.info(`Preparing "${currentFileName}" for scan...`);
 
-        // Read file as ArrayBuffer and convert to base64 using the new helper
-        const fileBuffer = await file.arrayBuffer();
-        const base64FileContent = arrayBufferToBase64(fileBuffer);
+        // Read file as Base64 using FileReader
+        const base64FileContent = await readFileAsBase64(file);
 
         setScanResults(prev =>
           prev.map(result =>
@@ -124,7 +131,6 @@ const FileUpload: React.FC = () => {
               : result
           )
         );
-        // The Edge Function handles database updates for errors, so no client-side update needed here.
       }
     }
     setUploading(false);
