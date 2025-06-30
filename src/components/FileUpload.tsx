@@ -18,7 +18,7 @@ interface ScanResult {
   progress: number;
 }
 
-const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
+const MAX_FILE_SIZE = 6 * 1024 * 1024; // 6 MB - Adjusted to match Supabase Edge Function payload limit
 
 // Helper function to read file as Base64 string using FileReader
 const readFileAsBase64 = (file: File): Promise<string> => {
@@ -47,7 +47,7 @@ const FileUpload: React.FC = () => {
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const newFiles = acceptedFiles.filter(file => {
       if (file.size > MAX_FILE_SIZE) {
-        toast.error(`File "${file.name}" is too large (max 25MB).`);
+        toast.error(`File "${file.name}" is too large (max ${MAX_FILE_SIZE / (1024 * 1024)}MB).`);
         return false;
       }
       return true;
@@ -163,7 +163,7 @@ const FileUpload: React.FC = () => {
               ? "Drop the files here..."
               : "Drag 'n' drop some files here, or click to select files"}
           </p>
-          <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">Max file size: 25 MB</p>
+          <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">Max file size: {MAX_FILE_SIZE / (1024 * 1024)} MB</p>
         </div>
 
         {files.length > 0 && (
