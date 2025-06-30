@@ -5,8 +5,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import ScanHistory from "./pages/ScanHistory"; // Import ScanHistory
-import Admin from "./pages/Admin"; // Import Admin
+import ScanHistory from "./pages/ScanHistory";
+import Admin from "./pages/Admin";
+import Navbar from "./components/Navbar"; // Import Navbar
 
 const queryClient = new QueryClient();
 
@@ -16,10 +17,11 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <Navbar /> {/* Render Navbar here */}
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/history" element={<ScanHistory />} /> {/* New route for Scan History */}
-          <Route path="/admin" element={<Admin />} /> {/* New route for Admin Section */}
+          <Route path="/history" element={<ScanHistory />} />
+          <Route path="/admin" element={<Admin />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
