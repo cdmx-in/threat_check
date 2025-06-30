@@ -19,7 +19,17 @@ interface ScanResult {
 }
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
-// const SUPABASE_STORAGE_BUCKET = "scanned-files"; // No longer directly used here
+
+// Helper function to convert ArrayBuffer to Base64 string
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+}
 
 const FileUpload: React.FC = () => {
   const [files, setFiles] = useState<File[]>([]);
@@ -67,9 +77,9 @@ const FileUpload: React.FC = () => {
         );
         toast.info(`Preparing "${currentFileName}" for scan...`);
 
-        // Read file as ArrayBuffer and convert to base64
+        // Read file as ArrayBuffer and convert to base64 using the new helper
         const fileBuffer = await file.arrayBuffer();
-        const base64FileContent = btoa(String.fromCharCode(...new Uint8Array(fileBuffer)));
+        const base64FileContent = arrayBufferToBase64(fileBuffer);
 
         setScanResults(prev =>
           prev.map(result =>
