@@ -9,11 +9,12 @@ import { Input } from "@/components/ui/input";
 import { UploadCloud, XCircle, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client"; // Import supabase client
 
 interface ScanResult {
   filename: string;
   status: "pending" | "scanning" | "clean" | "infected" | "error";
-  virusName?: string;
+  virus_name?: string; // Changed to match database column name
   progress: number;
 }
 
@@ -52,14 +53,14 @@ const FileUpload: React.FC = () => {
     }
 
     setUploading(true);
-    // This is a placeholder for actual API call
-    // In a real application, you would send files to your backend here
-    // and update scanResults based on the backend's response.
+    
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
+      const currentFileName = file.name;
+
       setScanResults(prev =>
         prev.map(result =>
-          result.filename === file.name ? { ...result, status: "scanning", progress: 20 } : result
+          result.filename === currentFileName ? { ...result, status: "scanning", progress: 20 } : result
         )
       );
 
@@ -67,29 +68,56 @@ const FileUpload: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate upload time
       setScanResults(prev =>
         prev.map(result =>
-          result.filename === file.name ? { ...result, progress: 70 } : result
+          result.filename === currentFileName ? { ...result, progress: 70 } : result
         )
       );
       await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate scan time
 
-      // Simulate scan result (replace with actual API response)
+      // Simulate scan result
       const isInfected = Math.random() > 0.8; // 20% chance of infection
+      const simulatedVirusName = isInfected ? "Eicar-Test-Signature" : undefined;
+      const simulatedScanStatus = isInfected ? "infected" : "clean";
+
       setScanResults(prev =>
         prev.map(result =>
-          result.filename === file.name
+          result.filename === currentFileName
             ? {
                 ...result,
-                status: isInfected ? "infected" : "clean",
-                virusName: isInfected ? "Eicar-Test-Signature" : undefined,
+                status: simulatedScanStatus,
+                virus_name: simulatedVirusName,
                 progress: 100,
               }
             : result
         )
       );
-      toast.success(`Scan for "${file.name}" completed.`);
+      toast.success(`Scan for "${currentFileName}" completed.`);
+
+      // Save result to Supabase
+      const { error } = await supabase
+        .from('scan_results')
+        .insert([
+          {
+            filename: currentFileName,
+            scan_result: simulatedScanStatus + (simulatedVirusName ? `: ${simulatedVirusName}` : ''),
+            virus_name: simulatedVirusName,
+            status: 'success', // Assuming the process of scanning itself was successful
+          },
+        ]);
+
+      if (error) {
+        console.error("Error saving scan result to Supabase:", error);
+        toast.error(`Failed to save scan result for "${currentFileName}".`);
+        setScanResults(prev =>
+          prev.map(result =>
+            result.filename === currentFileName
+              ? { ...result, status: "error", progress: 100 }
+              : result
+          )
+        );
+      }
     }
     setUploading(false);
-    setFiles([]); // Clear files after "upload"
+    setFiles([]); // Clear files after "upload" and saving results
   };
 
   const removeFile = (fileName: string) => {
@@ -161,7 +189,7 @@ const FileUpload: React.FC = () => {
                   )}
                   {result.status === "infected" && (
                     <span className="flex items-center text-red-600">
-                      <XCircle className="h-4 w-4 mr-1" /> Infected: {result.virusName}
+                      <XCircle className="h-4 w-4 mr-1" /> Infected: {result.virus_name}
                     </span>
                   )}
                   {result.status === "error" && (
