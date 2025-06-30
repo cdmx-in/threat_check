@@ -97,7 +97,7 @@ const FileUpload: React.FC = () => {
 
         // Invoke the new Edge Function for the entire process
         const { data: scanData, error: edgeFunctionError } = await supabase.functions.invoke('process-file-scan', {
-          body: JSON.stringify({ filename: currentFileName, fileContentBase64 }),
+          body: JSON.stringify({ filename: currentFileName, fileContentBase64: base64FileContent }), // Corrected variable name here
           headers: { 'Content-Type': 'application/json' },
         });
 
