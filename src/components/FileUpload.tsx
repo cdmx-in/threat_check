@@ -19,7 +19,7 @@ interface ScanResult {
 }
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
-const SUPABASE_STORAGE_BUCKET = "scanned-files"; // Name of your Supabase Storage bucket
+// const SUPABASE_STORAGE_BUCKET = "scanned-files"; // No longer directly used here
 
 const FileUpload: React.FC = () => {
   const [files, setFiles] = useState<File[]>([]);
@@ -58,56 +58,34 @@ const FileUpload: React.FC = () => {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const currentFileName = file.name;
-      let scanId: string | null = null;
 
       try {
-        // 1. Insert initial record into database
-        const { data: initialData, error: insertError } = await supabase
-          .from('scan_results')
-          .insert([{ filename: currentFileName, scan_result: 'pending', status: 'pending' }])
-          .select('id')
-          .single();
-
-        if (insertError || !initialData) {
-          throw new Error(`Failed to create initial scan record: ${insertError?.message}`);
-        }
-        scanId = initialData.id;
-
         setScanResults(prev =>
           prev.map(result =>
             result.filename === currentFileName ? { ...result, status: "uploading", progress: 10 } : result
           )
         );
-        toast.info(`Uploading "${currentFileName}"...`);
+        toast.info(`Preparing "${currentFileName}" for scan...`);
 
-        // 2. Upload file to Supabase Storage
-        const filePath = `${file.name}`; // You might want a more unique path
-        const { error: uploadError } = await supabase.storage
-          .from(SUPABASE_STORAGE_BUCKET)
-          .upload(filePath, file, {
-            cacheControl: '3600',
-            upsert: false,
-          });
-
-        if (uploadError) {
-          throw new Error(`Failed to upload file: ${uploadError.message}`);
-        }
+        // Read file as ArrayBuffer and convert to base64
+        const fileBuffer = await file.arrayBuffer();
+        const base64FileContent = btoa(String.fromCharCode(...new Uint8Array(fileBuffer)));
 
         setScanResults(prev =>
           prev.map(result =>
             result.filename === currentFileName ? { ...result, status: "scanning", progress: 50 } : result
           )
         );
-        toast.info(`File "${currentFileName}" uploaded. Scanning...`);
+        toast.info(`Sending "${currentFileName}" for scanning...`);
 
-        // 3. Invoke Edge Function for scanning
-        const { data: scanData, error: edgeFunctionError } = await supabase.functions.invoke('scan-file', {
-          body: JSON.stringify({ filename: currentFileName, filePath }),
+        // Invoke the new Edge Function for the entire process
+        const { data: scanData, error: edgeFunctionError } = await supabase.functions.invoke('process-file-scan', {
+          body: JSON.stringify({ filename: currentFileName, fileContentBase64 }),
           headers: { 'Content-Type': 'application/json' },
         });
 
         if (edgeFunctionError) {
-          throw new Error(`Edge Function error: ${edgeFunctionError.message}`);
+          throw new Error(`Scan API error: ${edgeFunctionError.message}`);
         }
 
         const { scan_result, virus_name, status } = scanData;
@@ -136,13 +114,7 @@ const FileUpload: React.FC = () => {
               : result
           )
         );
-        // Update database status to error if an initial record was created
-        if (scanId) {
-          await supabase
-            .from('scan_results')
-            .update({ status: 'error', scan_result: `Error: ${error.message}` })
-            .eq('id', scanId);
-        }
+        // The Edge Function handles database updates for errors, so no client-side update needed here.
       }
     }
     setUploading(false);
