@@ -35,15 +35,27 @@ serve(async (req) => {
     const SUPABASE_STORAGE_BUCKET = "scanned-files";
     const filePath = `${filename}`; 
 
-    console.log("Attempting to decode base64 and create Blob...");
-    const binaryString = atob(fileContentBase64);
-    const len = binaryString.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
+    let fileBlob: Blob;
+    try {
+      console.log("Attempting to decode base64 and create Blob...");
+      if (typeof fileContentBase64 !== 'string' || !fileContentBase64) {
+        throw new Error("fileContentBase64 is not a valid string.");
+      }
+      const binaryString = atob(fileContentBase64);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      fileBlob = new Blob([bytes], { type: 'application/octet-stream' });
+      console.log("Blob created successfully. Size:", fileBlob.size);
+    } catch (decodeError: any) {
+      console.error("Error decoding base64 or creating Blob:", decodeError.message);
+      return new Response(JSON.stringify({ error: `Failed to process file content: ${decodeError.message}` }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400, // Bad Request if content is malformed
+      });
     }
-    const fileBlob = new Blob([bytes], { type: 'application/octet-stream' });
-    console.log("Blob created successfully. Size:", fileBlob.size);
 
     console.log(`Attempting to upload file "${filePath}" to bucket "${SUPABASE_STORAGE_BUCKET}"...`);
     const { error: uploadError } = await supabase.storage
