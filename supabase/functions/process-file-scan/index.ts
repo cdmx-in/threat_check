@@ -15,7 +15,13 @@ serve(async (req) => {
   try {
     const { filename, fileContentBase64 } = await req.json();
 
-    if (!filename || !fileContentBase64) {
+    // Add logging to inspect received data
+    console.log("Received request for file scan:");
+    console.log("Filename:", filename);
+    console.log("fileContentBase64 length:", fileContentBase64 ? fileContentBase64.length : "undefined/null");
+    // Be careful not to log the full base64 content in production due to size/security
+
+    if (!filename || !fileContentBase664) { // Corrected typo here
       return new Response(JSON.stringify({ error: 'Filename and base64 file content are required.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
