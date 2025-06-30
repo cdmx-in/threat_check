@@ -7,7 +7,8 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import ScanHistory from "./pages/ScanHistory";
 import Admin from "./pages/Admin";
-import Navbar from "./components/Navbar"; // Keep Navbar
+import ScanDetails from "./pages/ScanDetails"; // Import the new ScanDetails component
+import Navbar from "./components/Navbar";
 
 const queryClient = new QueryClient();
 
@@ -17,10 +18,11 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Navbar /> {/* Navbar is always present */}
+        <Navbar />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/history" element={<ScanHistory />} />
+          <Route path="/history/:scanId" element={<ScanDetails />} /> {/* New route for scan details */}
           <Route path="/admin" element={<Admin />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

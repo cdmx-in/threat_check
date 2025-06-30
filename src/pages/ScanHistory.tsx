@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } => "@/components/ui/card";
+import { Link } from "react-router-dom"; // Import Link
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -11,12 +12,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button"; // Import Button component
+import { Button } from "@/components/ui/button";
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { supabase } from "@/integrations/supabase/client"; // Import supabase client
-import { format } from "date-fns"; // For date formatting
-import { Download } from "lucide-react"; // Import Download icon
-import { toast } from "sonner"; // Import toast for notifications
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
+import { Download } from "lucide-react";
+import { toast } from "sonner";
 
 interface ScanResult {
   id: string;
@@ -110,13 +111,17 @@ const ScanHistory: React.FC = () => {
                   <TableHead>Filename</TableHead>
                   <TableHead>Scan Date</TableHead>
                   <TableHead>Result</TableHead>
-                  <TableHead className="text-right">Actions</TableHead> {/* Added Actions column */}
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {scanHistory.map((scan) => (
                   <TableRow key={scan.id}>
-                    <TableCell className="font-medium">{scan.filename}</TableCell>
+                    <TableCell className="font-medium">
+                      <Link to={`/history/${scan.id}`} className="text-blue-600 hover:underline dark:text-blue-400">
+                        {scan.filename}
+                      </Link>
+                    </TableCell>
                     <TableCell>{format(new Date(scan.scan_date), 'yyyy-MM-dd HH:mm:ss')}</TableCell>
                     <TableCell>
                       <Badge variant={scan.scan_result.startsWith("infected") ? "destructive" : "default"}>
@@ -128,7 +133,7 @@ const ScanHistory: React.FC = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => handleDownload(scan.filename)}
-                        className="flex items-center gap-1"
+                        className="flex items-center gap-1 ml-auto" // Added ml-auto for right alignment
                       >
                         <Download className="h-4 w-4" /> Download
                       </Button>
