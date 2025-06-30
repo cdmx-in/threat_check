@@ -7,7 +7,9 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import ScanHistory from "./pages/ScanHistory";
 import Admin from "./pages/Admin";
-import Navbar from "./components/Navbar"; // Import Navbar
+import Login from "./pages/Login"; // Import Login page
+import Navbar from "./components/Navbar";
+import { SessionContextProvider } from "./integrations/supabase/auth"; // Import SessionContextProvider
 
 const queryClient = new QueryClient();
 
@@ -17,14 +19,17 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Navbar /> {/* Render Navbar here */}
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/history" element={<ScanHistory />} />
-          <Route path="/admin" element={<Admin />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <SessionContextProvider> {/* Wrap the app with SessionContextProvider */}
+          <Navbar />
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/history" element={<ScanHistory />} />
+            <Route path="/admin" element={<Admin />} />
+            <Route path="/login" element={<Login />} /> {/* Add Login route */}
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </SessionContextProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
