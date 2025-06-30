@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom"; // Import Link
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -16,8 +16,19 @@ import { Button } from "@/components/ui/button";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
-import { Download } from "lucide-react";
+import { Download, Trash2 } from "lucide-react"; // Import Trash2 icon
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"; // Import AlertDialog components
 
 interface ScanResult {
   id: string;
@@ -32,6 +43,7 @@ const ScanHistory: React.FC = () => {
   const [scanHistory, setScanHistory] = useState<ScanResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null); // State to track which item is being deleted
 
   useEffect(() => {
     const fetchScanHistory = async () => {
@@ -76,6 +88,28 @@ const ScanHistory: React.FC = () => {
     } catch (err: any) {
       console.error("Error during download:", err);
       toast.error(`Failed to download "${filename}": ${err.message}`);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    setDeletingId(id); // Set the ID of the item being deleted
+    try {
+      const { error } = await supabase
+        .from('scan_results')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        throw new Error(`Failed to delete scan result: ${error.message}`);
+      }
+
+      setScanHistory(prevHistory => prevHistory.filter(scan => scan.id !== id));
+      toast.success("Scan result deleted successfully.");
+    } catch (err: any) {
+      console.error("Error deleting scan result:", err);
+      toast.error(`Failed to delete scan result: ${err.message}`);
+    } finally {
+      setDeletingId(null); // Clear the deleting ID
     }
   };
 
@@ -128,15 +162,42 @@ const ScanHistory: React.FC = () => {
                         {scan.scan_result}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right flex items-center justify-end space-x-2">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleDownload(scan.filename)}
-                        className="flex items-center gap-1 ml-auto" // Added ml-auto for right alignment
+                        className="flex items-center gap-1"
                       >
                         <Download className="h-4 w-4" /> Download
                       </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            disabled={deletingId === scan.id}
+                            className="flex items-center gap-1"
+                          >
+                            <Trash2 className="h-4 w-4" /> Delete
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will permanently delete the scan result for "
+                              <span className="font-semibold">{scan.filename}</span>" from your history.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDelete(scan.id)}>
+                              Continue
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </TableCell>
                   </TableRow>
                 ))}
