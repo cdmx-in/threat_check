@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { supabase } from "@/integrations/supabase/client"; // Import supabase client
 import { format } from "date-fns"; // For date formatting
+import { toast } from "sonner"; // Import toast for notifications
 
 interface ScanResult {
   id: string;
@@ -24,38 +25,53 @@ interface ScanResult {
   status: string;
 }
 
-// This is mock data. In a real app, this would come from your backend API.
-const mockSignatureInfo = {
-  version: "0.103.2",
-  updateTimestamp: "2023-10-26 12:00:00",
-};
+interface SignatureInfo {
+  version: string;
+  updateTimestamp: string;
+}
 
 const Admin: React.FC = () => {
   const [scanLogs, setScanLogs] = useState<ScanResult[]>([]);
+  const [signatureInfo, setSignatureInfo] = useState<SignatureInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchScanLogs = async () => {
+    const fetchData = async () => {
       setLoading(true);
       setError(null);
-      const { data, error } = await supabase
+
+      // Fetch scan logs
+      const { data: logsData, error: logsError } = await supabase
         .from('scan_results')
         .select('*')
         .order('scan_date', { ascending: false })
-        .limit(10); // Fetching a limited number of recent logs for admin view
+        .limit(10);
 
-      if (error) {
-        console.error("Error fetching scan logs for admin:", error);
+      if (logsError) {
+        console.error("Error fetching scan logs for admin:", logsError);
         setError("Failed to load scan logs.");
-        setLoading(false);
       } else {
-        setScanLogs(data || []);
+        setScanLogs(logsData || []);
+      }
+
+      // Fetch signature information from Edge Function
+      try {
+        const { data: signatureData, error: signatureFunctionError } = await supabase.functions.invoke('get-clamav-signature-info');
+        if (signatureFunctionError) {
+          throw new Error(`Signature API error: ${signatureFunctionError.message}`);
+        }
+        setSignatureInfo(signatureData);
+      } catch (sigErr: any) {
+        console.error("Error fetching signature info:", sigErr);
+        toast.error(`Failed to load signature info: ${sigErr.message}`);
+        setError(prev => prev ? `${prev} Also, failed to load signature info.` : "Failed to load signature info.");
+      } finally {
         setLoading(false);
       }
     };
 
-    fetchScanLogs();
+    fetchData();
   }, []);
 
   if (loading) {
@@ -86,11 +102,15 @@ const Admin: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
                 <p className="text-sm text-gray-500 dark:text-gray-400">Signature Version:</p>
-                <p className="text-lg font-medium text-gray-900 dark:text-gray-100">{mockSignatureInfo.version}</p>
+                <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                  {signatureInfo ? signatureInfo.version : "N/A"}
+                </p>
               </div>
               <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
                 <p className="text-sm text-gray-500 dark:text-gray-400">Last Updated:</p>
-                <p className="text-lg font-medium text-gray-900 dark:text-gray-100">{mockSignatureInfo.updateTimestamp}</p>
+                <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                  {signatureInfo ? format(new Date(signatureInfo.updateTimestamp), 'yyyy-MM-dd HH:mm:ss') : "N/A"}
+                </p>
               </div>
             </div>
           </div>
