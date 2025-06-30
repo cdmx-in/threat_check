@@ -13,15 +13,19 @@ serve(async (req) => {
   }
 
   try {
-    const { filename, fileContentBase64 } = await req.json();
+    // Parse multipart/form-data
+    const formData = await req.formData();
+    const filename = formData.get('filename') as string;
+    const file = formData.get('file') as File; // Deno's formData() returns a File object
 
     console.log("Received request for file scan:");
     console.log("Filename:", filename);
-    console.log("fileContentBase64 length:", fileContentBase64 ? fileContentBase64.length : "undefined/null");
+    console.log("File size:", file ? file.size : "undefined/null");
+    console.log("File type:", file ? file.type : "undefined/null");
 
-    if (!filename || !fileContentBase64) {
-      console.error("Validation failed: Filename or fileContentBase64 missing.");
-      return new Response(JSON.stringify({ error: 'Filename and base64 file content are required.' }), {
+    if (!filename || !file) {
+      console.error("Validation failed: Filename or file missing from FormData.");
+      return new Response(JSON.stringify({ error: 'Filename and file content are required.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
       });
@@ -35,39 +39,11 @@ serve(async (req) => {
     const SUPABASE_STORAGE_BUCKET = "scanned-files";
     const filePath = `${filename}`; 
 
-    let fileBlob: Blob;
-    try {
-      console.log("Attempting to decode base64 and create Blob...");
-      if (typeof fileContentBase64 !== 'string' || !fileContentBase64) {
-        throw new Error("fileContentBase64 is not a valid string.");
-      }
-      // Log the size of the base64 string before decoding
-      console.log("Base64 content size (characters):", fileContentBase64.length);
-
-      // Attempt to decode the base64 string
-      const binaryString = atob(fileContentBase64);
-      console.log("Base64 decoded to binary string. Length:", binaryString.length);
-
-      const len = binaryString.length;
-      const bytes = new Uint8Array(len);
-      for (let i = 0; i < len; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      fileBlob = new Blob([bytes], { type: 'application/octet-stream' });
-      console.log("Blob created successfully. Size:", fileBlob.size);
-    } catch (decodeError: any) {
-      console.error("Error decoding base64 or creating Blob:", decodeError.message);
-      // Return a 400 Bad Request if the base64 content itself is the problem
-      return new Response(JSON.stringify({ error: `Failed to process file content: ${decodeError.message}` }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400, 
-      });
-    }
-
     console.log(`Attempting to upload file "${filePath}" to bucket "${SUPABASE_STORAGE_BUCKET}"...`);
+    // The 'file' object from formData() is already a Blob, so we can use it directly
     const { error: uploadError } = await supabase.storage
       .from(SUPABASE_STORAGE_BUCKET)
-      .upload(filePath, fileBlob, {
+      .upload(filePath, file, { // Use the File object directly
         cacheControl: '3600',
         upsert: true,
       });

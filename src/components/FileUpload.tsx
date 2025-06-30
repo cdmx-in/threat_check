@@ -18,26 +18,8 @@ interface ScanResult {
   progress: number;
 }
 
-const MAX_FILE_SIZE = 6 * 1024 * 1024; // 6 MB - Adjusted to match Supabase Edge Function payload limit
-
-// Helper function to read file as Base64 string using FileReader
-const readFileAsBase64 = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      // The result is a data URL (e.g., "data:image/png;base64,iVBORw0K...").
-      // We need to extract only the base64 part after the comma.
-      const base64String = (reader.result as string).split(',')[1];
-      if (base64String) {
-        resolve(base64String);
-      } else {
-        reject(new Error("Failed to extract base64 string from file."));
-      }
-    };
-    reader.onerror = (error) => reject(error);
-    reader.readAsDataURL(file);
-  });
-};
+// Reverting MAX_FILE_SIZE to 25MB, as FormData handles larger files more efficiently
+const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
 
 const FileUpload: React.FC = () => {
   const [files, setFiles] = useState<File[]>([]);
@@ -85,8 +67,10 @@ const FileUpload: React.FC = () => {
         );
         toast.info(`Preparing "${currentFileName}" for scan...`);
 
-        // Read file as Base64 using FileReader
-        const base64FileContent = await readFileAsBase64(file);
+        // Create FormData and append the file
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('filename', currentFileName); // Also send filename explicitly
 
         setScanResults(prev =>
           prev.map(result =>
@@ -95,10 +79,10 @@ const FileUpload: React.FC = () => {
         );
         toast.info(`Sending "${currentFileName}" for scanning...`);
 
-        // Invoke the new Edge Function for the entire process
+        // Invoke the Edge Function with FormData
         const { data: scanData, error: edgeFunctionError } = await supabase.functions.invoke('process-file-scan', {
-          body: JSON.stringify({ filename: currentFileName, fileContentBase64: base64FileContent }), // Corrected variable name here
-          headers: { 'Content-Type': 'application/json' },
+          body: formData, // Send FormData directly
+          // No need to set 'Content-Type': 'application/json' here, fetch handles multipart/form-data automatically
         });
 
         if (edgeFunctionError) {
