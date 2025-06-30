@@ -41,7 +41,13 @@ serve(async (req) => {
       if (typeof fileContentBase64 !== 'string' || !fileContentBase64) {
         throw new Error("fileContentBase64 is not a valid string.");
       }
+      // Log the size of the base64 string before decoding
+      console.log("Base64 content size (characters):", fileContentBase64.length);
+
+      // Attempt to decode the base64 string
       const binaryString = atob(fileContentBase64);
+      console.log("Base64 decoded to binary string. Length:", binaryString.length);
+
       const len = binaryString.length;
       const bytes = new Uint8Array(len);
       for (let i = 0; i < len; i++) {
@@ -51,9 +57,10 @@ serve(async (req) => {
       console.log("Blob created successfully. Size:", fileBlob.size);
     } catch (decodeError: any) {
       console.error("Error decoding base64 or creating Blob:", decodeError.message);
+      // Return a 400 Bad Request if the base64 content itself is the problem
       return new Response(JSON.stringify({ error: `Failed to process file content: ${decodeError.message}` }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400, // Bad Request if content is malformed
+        status: 400, 
       });
     }
 
