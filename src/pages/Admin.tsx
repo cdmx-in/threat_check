@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -12,6 +12,17 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { MadeWithDyad } from "@/components/made-with-dyad";
+import { supabase } from "@/integrations/supabase/client"; // Import supabase client
+import { format } from "date-fns"; // For date formatting
+
+interface ScanResult {
+  id: string;
+  filename: string;
+  scan_date: string;
+  scan_result: string;
+  virus_name?: string;
+  status: string;
+}
 
 // This is mock data. In a real app, this would come from your backend API.
 const mockSignatureInfo = {
@@ -19,16 +30,50 @@ const mockSignatureInfo = {
   updateTimestamp: "2023-10-26 12:00:00",
 };
 
-const mockScanLogs = [
-  { id: 1, timestamp: "2023-10-26 10:00:00", filename: "document.pdf", scanResult: "clean", status: "success" },
-  { id: 2, timestamp: "2023-10-26 10:15:30", filename: "malware.zip", scanResult: "infected: Eicar-Test-Signature", status: "success" },
-  { id: 3, timestamp: "2023-10-26 10:30:00", filename: "image.jpg", scanResult: "clean", status: "success" },
-  { id: 4, timestamp: "2023-10-26 10:45:10", filename: "report.docx", scanResult: "clean", status: "success" },
-  { id: 5, timestamp: "2023-10-26 11:00:00", filename: "virus.exe", scanResult: "infected: Trojan.Generic", status: "success" },
-  { id: 6, timestamp: "2023-10-26 11:30:00", filename: "corrupt.file", scanResult: "N/A", status: "error" },
-];
-
 const Admin: React.FC = () => {
+  const [scanLogs, setScanLogs] = useState<ScanResult[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchScanLogs = async () => {
+      setLoading(true);
+      setError(null);
+      const { data, error } = await supabase
+        .from('scan_results')
+        .select('*')
+        .order('scan_date', { ascending: false })
+        .limit(10); // Fetching a limited number of recent logs for admin view
+
+      if (error) {
+        console.error("Error fetching scan logs for admin:", error);
+        setError("Failed to load scan logs.");
+        setLoading(false);
+      } else {
+        setScanLogs(data || []);
+        setLoading(false);
+      }
+    };
+
+    fetchScanLogs();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
+        <p className="text-lg text-gray-600 dark:text-gray-400">Loading admin data...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-950 p-4">
+        <p className="text-lg text-red-600 dark:text-red-400">{error}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center bg-gray-100 dark:bg-gray-950 p-4">
       <Card className="w-full max-w-4xl mx-auto shadow-lg mt-8">
@@ -52,34 +97,38 @@ const Admin: React.FC = () => {
 
           <div>
             <h3 className="text-xl font-semibold mb-4">Recent Scan Logs</h3>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Timestamp</TableHead>
-                  <TableHead>Filename</TableHead>
-                  <TableHead>Result</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mockScanLogs.map((log) => (
-                  <TableRow key={log.id}>
-                    <TableCell>{log.timestamp}</TableCell>
-                    <TableCell className="font-medium">{log.filename}</TableCell>
-                    <TableCell>
-                      <Badge variant={log.scanResult.startsWith("infected") ? "destructive" : "default"}>
-                        {log.scanResult}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={log.status === "error" ? "destructive" : "secondary"}>
-                        {log.status}
-                      </Badge>
-                    </TableCell>
+            {scanLogs.length === 0 ? (
+              <p className="text-center text-gray-500 dark:text-gray-400">No recent scan logs found.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Timestamp</TableHead>
+                    <TableHead>Filename</TableHead>
+                    <TableHead>Result</TableHead>
+                    <TableHead>Status</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {scanLogs.map((log) => (
+                    <TableRow key={log.id}>
+                      <TableCell>{format(new Date(log.scan_date), 'yyyy-MM-dd HH:mm:ss')}</TableCell>
+                      <TableCell className="font-medium">{log.filename}</TableCell>
+                      <TableCell>
+                        <Badge variant={log.scan_result.startsWith("infected") ? "destructive" : "default"}>
+                          {log.scan_result}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={log.status === "error" ? "destructive" : "secondary"}>
+                          {log.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </div>
         </CardContent>
       </Card>
