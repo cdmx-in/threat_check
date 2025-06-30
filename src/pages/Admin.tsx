@@ -33,6 +33,8 @@ interface SignatureInfo {
 const Admin: React.FC = () => {
   const [scanLogs, setScanLogs] = useState<ScanResult[]>([]);
   const [signatureInfo, setSignatureInfo] = useState<SignatureInfo | null>(null);
+  const [totalScans, setTotalScans] = useState<number | null>(null);
+  const [infectedScans, setInfectedScans] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,6 +55,31 @@ const Admin: React.FC = () => {
         setError("Failed to load scan logs.");
       } else {
         setScanLogs(logsData || []);
+      }
+
+      // Fetch total scan count
+      const { count: totalCount, error: totalCountError } = await supabase
+        .from('scan_results')
+        .select('*', { count: 'exact', head: true });
+
+      if (totalCountError) {
+        console.error("Error fetching total scan count:", totalCountError);
+        toast.error("Failed to load total scan count.");
+      } else {
+        setTotalScans(totalCount);
+      }
+
+      // Fetch infected scan count
+      const { count: infectedCount, error: infectedCountError } = await supabase
+        .from('scan_results')
+        .select('*', { count: 'exact', head: true })
+        .ilike('scan_result', 'infected%'); // Use ilike for case-insensitive match and potential virus name suffix
+
+      if (infectedCountError) {
+        console.error("Error fetching infected scan count:", infectedCountError);
+        toast.error("Failed to load infected scan count.");
+      } else {
+        setInfectedScans(infectedCount);
       }
 
       // Fetch signature information from Edge Function
@@ -97,6 +124,24 @@ const Admin: React.FC = () => {
           <CardTitle className="text-2xl font-bold text-center">Admin Section</CardTitle>
         </CardHeader>
         <CardContent className="space-y-8">
+          <div>
+            <h3 className="text-xl font-semibold mb-4">Scan Statistics</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
+                <p className="text-sm text-gray-500 dark:text-gray-400">Total Files Scanned:</p>
+                <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                  {totalScans !== null ? totalScans : "N/A"}
+                </p>
+              </div>
+              <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
+                <p className="text-sm text-gray-500 dark:text-gray-400">Infected Files:</p>
+                <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                  {infectedScans !== null ? infectedScans : "N/A"}
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div>
             <h3 className="text-xl font-semibold mb-4">ClamAV Signature Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
