@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } => "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -11,15 +11,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button"; // Import Button component
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { supabase } from "@/integrations/supabase/client"; // Import supabase client
 import { format } from "date-fns"; // For date formatting
+import { Download } from "lucide-react"; // Import Download icon
+import { toast } from "sonner"; // Import toast for notifications
 
 interface ScanResult {
   id: string;
   filename: string;
-  scan_date: string; // Changed to match database column name
-  scan_result: string; // Changed to match database column name
+  scan_date: string;
+  scan_result: string;
   virus_name?: string;
   status: string;
 }
@@ -36,7 +39,7 @@ const ScanHistory: React.FC = () => {
       const { data, error } = await supabase
         .from('scan_results')
         .select('*')
-        .order('scan_date', { ascending: false }); // Order by most recent scans first
+        .order('scan_date', { ascending: false });
 
       if (error) {
         console.error("Error fetching scan history:", error);
@@ -50,6 +53,30 @@ const ScanHistory: React.FC = () => {
 
     fetchScanHistory();
   }, []);
+
+  const handleDownload = async (filename: string) => {
+    toast.info(`Preparing "${filename}" for download...`);
+    try {
+      const { data, error } = await supabase.functions.invoke('get-signed-url', {
+        body: JSON.stringify({ filename }),
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (error) {
+        throw new Error(`Download API error: ${error.message}`);
+      }
+
+      if (data && data.signedUrl) {
+        window.open(data.signedUrl, '_blank');
+        toast.success(`Download for "${filename}" started.`);
+      } else {
+        throw new Error("No signed URL received.");
+      }
+    } catch (err: any) {
+      console.error("Error during download:", err);
+      toast.error(`Failed to download "${filename}": ${err.message}`);
+    }
+  };
 
   if (loading) {
     return (
@@ -83,6 +110,7 @@ const ScanHistory: React.FC = () => {
                   <TableHead>Filename</TableHead>
                   <TableHead>Scan Date</TableHead>
                   <TableHead>Result</TableHead>
+                  <TableHead className="text-right">Actions</TableHead> {/* Added Actions column */}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -94,6 +122,16 @@ const ScanHistory: React.FC = () => {
                       <Badge variant={scan.scan_result.startsWith("infected") ? "destructive" : "default"}>
                         {scan.scan_result}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDownload(scan.filename)}
+                        className="flex items-center gap-1"
+                      >
+                        <Download className="h-4 w-4" /> Download
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
