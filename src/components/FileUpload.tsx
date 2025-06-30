@@ -13,12 +13,13 @@ import { supabase } from "@/integrations/supabase/client"; // Import supabase cl
 
 interface ScanResult {
   filename: string;
-  status: "pending" | "scanning" | "clean" | "infected" | "error";
-  virus_name?: string; // Changed to match database column name
+  status: "pending" | "uploading" | "scanning" | "clean" | "infected" | "error";
+  virus_name?: string;
   progress: number;
 }
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
+const SUPABASE_STORAGE_BUCKET = "scanned-files"; // Name of your Supabase Storage bucket
 
 const FileUpload: React.FC = () => {
   const [files, setFiles] = useState<File[]>([]);
@@ -57,56 +58,77 @@ const FileUpload: React.FC = () => {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const currentFileName = file.name;
+      let scanId: string | null = null;
 
-      setScanResults(prev =>
-        prev.map(result =>
-          result.filename === currentFileName ? { ...result, status: "scanning", progress: 20 } : result
-        )
-      );
+      try {
+        // 1. Insert initial record into database
+        const { data: initialData, error: insertError } = await supabase
+          .from('scan_results')
+          .insert([{ filename: currentFileName, scan_result: 'pending', status: 'pending' }])
+          .select('id')
+          .single();
 
-      // Simulate upload and scan
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate upload time
-      setScanResults(prev =>
-        prev.map(result =>
-          result.filename === currentFileName ? { ...result, progress: 70 } : result
-        )
-      );
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate scan time
+        if (insertError || !initialData) {
+          throw new Error(`Failed to create initial scan record: ${insertError?.message}`);
+        }
+        scanId = initialData.id;
 
-      // Simulate scan result
-      const isInfected = Math.random() > 0.8; // 20% chance of infection
-      const simulatedVirusName = isInfected ? "Eicar-Test-Signature" : undefined;
-      const simulatedScanStatus = isInfected ? "infected" : "clean";
+        setScanResults(prev =>
+          prev.map(result =>
+            result.filename === currentFileName ? { ...result, status: "uploading", progress: 10 } : result
+          )
+        );
+        toast.info(`Uploading "${currentFileName}"...`);
 
-      setScanResults(prev =>
-        prev.map(result =>
-          result.filename === currentFileName
-            ? {
-                ...result,
-                status: simulatedScanStatus,
-                virus_name: simulatedVirusName,
-                progress: 100,
-              }
-            : result
-        )
-      );
-      toast.success(`Scan for "${currentFileName}" completed.`);
+        // 2. Upload file to Supabase Storage
+        const filePath = `${file.name}`; // You might want a more unique path
+        const { error: uploadError } = await supabase.storage
+          .from(SUPABASE_STORAGE_BUCKET)
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false,
+          });
 
-      // Save result to Supabase
-      const { error } = await supabase
-        .from('scan_results')
-        .insert([
-          {
-            filename: currentFileName,
-            scan_result: simulatedScanStatus + (simulatedVirusName ? `: ${simulatedVirusName}` : ''),
-            virus_name: simulatedVirusName,
-            status: 'success', // Assuming the process of scanning itself was successful
-          },
-        ]);
+        if (uploadError) {
+          throw new Error(`Failed to upload file: ${uploadError.message}`);
+        }
 
-      if (error) {
-        console.error("Error saving scan result to Supabase:", error);
-        toast.error(`Failed to save scan result for "${currentFileName}".`);
+        setScanResults(prev =>
+          prev.map(result =>
+            result.filename === currentFileName ? { ...result, status: "scanning", progress: 50 } : result
+          )
+        );
+        toast.info(`File "${currentFileName}" uploaded. Scanning...`);
+
+        // 3. Invoke Edge Function for scanning
+        const { data: scanData, error: edgeFunctionError } = await supabase.functions.invoke('scan-file', {
+          body: JSON.stringify({ filename: currentFileName, filePath }),
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        if (edgeFunctionError) {
+          throw new Error(`Edge Function error: ${edgeFunctionError.message}`);
+        }
+
+        const { scan_result, virus_name, status } = scanData;
+
+        setScanResults(prev =>
+          prev.map(result =>
+            result.filename === currentFileName
+              ? {
+                  ...result,
+                  status: scan_result.startsWith("infected") ? "infected" : "clean",
+                  virus_name: virus_name,
+                  progress: 100,
+                }
+              : result
+          )
+        );
+        toast.success(`Scan for "${currentFileName}" completed: ${scan_result}.`);
+
+      } catch (error: any) {
+        console.error("Scan process failed:", error);
+        toast.error(`Scan for "${currentFileName}" failed: ${error.message}`);
         setScanResults(prev =>
           prev.map(result =>
             result.filename === currentFileName
@@ -114,10 +136,17 @@ const FileUpload: React.FC = () => {
               : result
           )
         );
+        // Update database status to error if an initial record was created
+        if (scanId) {
+          await supabase
+            .from('scan_results')
+            .update({ status: 'error', scan_result: `Error: ${error.message}` })
+            .eq('id', scanId);
+        }
       }
     }
     setUploading(false);
-    setFiles([]); // Clear files after "upload" and saving results
+    setFiles([]); // Clear files after processing
   };
 
   const removeFile = (fileName: string) => {
@@ -170,7 +199,7 @@ const FileUpload: React.FC = () => {
               disabled={uploading}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white"
             >
-              {uploading ? "Scanning..." : "Scan Files"}
+              {uploading ? "Processing..." : "Scan Files"}
             </Button>
           </div>
         )}
@@ -197,13 +226,13 @@ const FileUpload: React.FC = () => {
                       <XCircle className="h-4 w-4 mr-1" /> Error
                     </span>
                   )}
-                  {(result.status === "pending" || result.status === "scanning") && (
+                  {(result.status === "pending" || result.status === "uploading" || result.status === "scanning") && (
                     <span className="text-gray-500">
-                      {result.status === "pending" ? "Ready to scan" : "Scanning..."}
+                      {result.status === "pending" ? "Ready to scan" : result.status === "uploading" ? "Uploading..." : "Scanning..."}
                     </span>
                   )}
                 </div>
-                {(result.status === "pending" || result.status === "scanning") && (
+                {(result.status === "pending" || result.status === "uploading" || result.status === "scanning") && (
                   <Progress value={result.progress} className="w-full" />
                 )}
               </div>
