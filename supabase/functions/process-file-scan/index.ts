@@ -15,43 +15,42 @@ serve(async (req) => {
   try {
     const { filename, fileContentBase64 } = await req.json();
 
-    // Add logging to inspect received data
     console.log("Received request for file scan:");
     console.log("Filename:", filename);
     console.log("fileContentBase64 length:", fileContentBase64 ? fileContentBase64.length : "undefined/null");
-    // Be careful not to log the full base64 content in production due to size/security
 
     if (!filename || !fileContentBase64) {
+      console.error("Validation failed: Filename or fileContentBase64 missing.");
       return new Response(JSON.stringify({ error: 'Filename and base64 file content are required.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
       });
     }
 
-    // Initialize Supabase client with service role key for database and storage access
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
     const SUPABASE_STORAGE_BUCKET = "scanned-files";
-    const filePath = `${filename}`; // You might want a more unique path
+    const filePath = `${filename}`; 
 
-    // Decode base64 file content
+    console.log("Attempting to decode base64 and create Blob...");
     const binaryString = atob(fileContentBase64);
     const len = binaryString.length;
     const bytes = new Uint8Array(len);
     for (let i = 0; i < len; i++) {
       bytes[i] = binaryString.charCodeAt(i);
     }
-    const fileBlob = new Blob([bytes], { type: 'application/octet-stream' }); // Generic binary type
+    const fileBlob = new Blob([bytes], { type: 'application/octet-stream' });
+    console.log("Blob created successfully. Size:", fileBlob.size);
 
-    // 1. Upload file to Supabase Storage
+    console.log(`Attempting to upload file "${filePath}" to bucket "${SUPABASE_STORAGE_BUCKET}"...`);
     const { error: uploadError } = await supabase.storage
       .from(SUPABASE_STORAGE_BUCKET)
       .upload(filePath, fileBlob, {
         cacheControl: '3600',
-        upsert: true, // Allow overwriting for simplicity in this example
+        upsert: true,
       });
 
     if (uploadError) {
@@ -61,8 +60,9 @@ serve(async (req) => {
         status: 500,
       });
     }
+    console.log("File uploaded to storage successfully.");
 
-    // 2. Insert initial record into database
+    console.log("Attempting to insert initial scan record...");
     const { data: initialData, error: insertError } = await supabase
       .from('scan_results')
       .insert([{ filename: filename, scan_result: 'pending', status: 'pending' }])
@@ -77,14 +77,16 @@ serve(async (req) => {
       });
     }
     const scanId = initialData.id;
+    console.log("Initial scan record inserted successfully. Scan ID:", scanId);
 
-    // 3. Simulate scan result (integrating logic from original scan-file)
-    const isInfected = Math.random() > 0.8; // 20% chance of infection
+    console.log("Simulating scan result...");
+    const isInfected = Math.random() > 0.8;
     const simulatedVirusName = isInfected ? "Eicar-Test-Signature" : undefined;
     const simulatedScanResult = isInfected ? "infected" : "clean";
-    const simulatedStatus = 'success'; // The scan process itself was successful
+    const simulatedStatus = 'success';
+    console.log(`Simulated result: ${simulatedScanResult}, Virus: ${simulatedVirusName}`);
 
-    // 4. Update the scan_results table with the final result
+    console.log(`Attempting to update scan record with ID: ${scanId}`);
     const { error: updateError } = await supabase
       .from('scan_results')
       .update({
@@ -92,7 +94,7 @@ serve(async (req) => {
         virus_name: simulatedVirusName,
         status: simulatedStatus,
       })
-      .eq('id', scanId); // Use the specific scanId
+      .eq('id', scanId);
 
     if (updateError) {
       console.error("Error updating scan result in database:", updateError);
@@ -101,20 +103,21 @@ serve(async (req) => {
         status: 500,
       });
     }
+    console.log("Scan record updated successfully.");
 
     return new Response(JSON.stringify({
       filename,
       scan_result: simulatedScanResult,
       virus_name: simulatedVirusName,
       status: simulatedStatus,
-      scanId // Return the ID of the scan record
+      scanId
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
 
-  } catch (error) {
-    console.error("Edge Function error:", error.message);
+  } catch (error: any) {
+    console.error("Edge Function caught unhandled error:", error.message);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
