@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } = 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -21,7 +21,7 @@ serve(async (req) => {
     console.log("fileContentBase64 length:", fileContentBase64 ? fileContentBase64.length : "undefined/null");
     // Be careful not to log the full base64 content in production due to size/security
 
-    if (!filename || !fileContentBase64) { // Corrected typo here: was fileContentBase664
+    if (!filename || !fileContentBase64) {
       return new Response(JSON.stringify({ error: 'Filename and base64 file content are required.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
