@@ -1,4 +1,4 @@
-const BASE_URL = "http://localhost:3000"; // Using the development server URL from swagger.json
+const BASE_URL = "http://localhost:3765"; // Updated to the new host
 
 interface HealthResponse {
   status: "healthy" | "unhealthy";
