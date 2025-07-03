@@ -12,27 +12,13 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { supabase } from "@/integrations/supabase/client"; // Import supabase client
-import { format } from "date-fns"; // For date formatting
-import { toast } from "sonner"; // Import toast for notifications
-
-interface ScanResult {
-  id: string;
-  filename: string;
-  scan_date: string;
-  scan_result: string;
-  virus_name?: string;
-  status: string;
-}
-
-interface SignatureInfo {
-  version: string;
-  updateTimestamp: string;
-}
+import { api, ScanLogEntry, HealthResponse } from "@/services/api"; // Import the new API service
+import { format } from "date-fns";
+import { toast } from "sonner";
 
 const Admin: React.FC = () => {
-  const [scanLogs, setScanLogs] = useState<ScanResult[]>([]);
-  const [signatureInfo, setSignatureInfo] = useState<SignatureInfo | null>(null);
+  const [scanLogs, setScanLogs] = useState<ScanLogEntry[]>([]);
+  const [signatureInfo, setSignatureInfo] = useState<HealthResponse | null>(null);
   const [totalScans, setTotalScans] = useState<number | null>(null);
   const [infectedScans, setInfectedScans] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,56 +29,26 @@ const Admin: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      // Fetch scan logs
-      const { data: logsData, error: logsError } = await supabase
-        .from('scan_results')
-        .select('*')
-        .order('scan_date', { ascending: false })
-        .limit(10);
-
-      if (logsError) {
-        console.error("Error fetching scan logs for admin:", logsError);
-        setError("Failed to load scan logs.");
-      } else {
-        setScanLogs(logsData || []);
-      }
-
-      // Fetch total scan count
-      const { count: totalCount, error: totalCountError } = await supabase
-        .from('scan_results')
-        .select('*', { count: 'exact', head: true });
-
-      if (totalCountError) {
-        console.error("Error fetching total scan count:", totalCountError);
-        toast.error("Failed to load total scan count.");
-      } else {
-        setTotalScans(totalCount);
-      }
-
-      // Fetch infected scan count
-      const { count: infectedCount, error: infectedCountError } = await supabase
-        .from('scan_results')
-        .select('*', { count: 'exact', head: true })
-        .ilike('scan_result', 'infected%'); // Use ilike for case-insensitive match and potential virus name suffix
-
-      if (infectedCountError) {
-        console.error("Error fetching infected scan count:", infectedCountError);
-        toast.error("Failed to load infected scan count.");
-      } else {
-        setInfectedScans(infectedCount);
-      }
-
-      // Fetch signature information from Edge Function
       try {
-        const { data: signatureData, error: signatureFunctionError } = await supabase.functions.invoke('get-clamav-signature-info');
-        if (signatureFunctionError) {
-          throw new Error(`Signature API error: ${signatureFunctionError.message}`);
+        // Fetch scan history for logs and counts
+        const { data: historyData, count: totalCount, success: historySuccess } = await api.getScanHistory(10); // Limit to 10 for recent logs
+        if (historySuccess) {
+          setScanLogs(historyData || []);
+          setTotalScans(totalCount);
+          const infectedCount = historyData.filter(log => log.scan_result === "INFECTED").length;
+          setInfectedScans(infectedCount);
+        } else {
+          setError("Failed to load scan logs and statistics.");
         }
-        setSignatureInfo(signatureData);
-      } catch (sigErr: any) {
-        console.error("Error fetching signature info:", sigErr);
-        toast.error(`Failed to load signature info: ${sigErr.message}`);
-        setError(prev => prev ? `${prev} Also, failed to load signature info.` : "Failed to load signature info.");
+
+        // Fetch health information for ClamAV signature
+        const healthData = await api.getHealth();
+        setSignatureInfo(healthData);
+
+      } catch (err: any) {
+        console.error("Error fetching admin data:", err);
+        setError(`Failed to load admin data: ${err.message}`);
+        toast.error(`Failed to load admin data: ${err.message}`);
       } finally {
         setLoading(false);
       }
@@ -148,13 +104,13 @@ const Admin: React.FC = () => {
               <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
                 <p className="text-sm text-gray-500 dark:text-gray-400">Signature Version:</p>
                 <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                  {signatureInfo ? signatureInfo.version : "N/A"}
+                  {signatureInfo?.clamav ? signatureInfo.clamav.split('/')[0] : "N/A"}
                 </p>
               </div>
               <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
                 <p className="text-sm text-gray-500 dark:text-gray-400">Last Updated:</p>
                 <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                  {signatureInfo ? format(new Date(signatureInfo.updateTimestamp), 'yyyy-MM-dd HH:mm:ss') : "N/A"}
+                  {signatureInfo ? format(new Date(signatureInfo.timestamp), 'yyyy-MM-dd HH:mm:ss') : "N/A"}
                 </p>
               </div>
             </div>
@@ -171,24 +127,20 @@ const Admin: React.FC = () => {
                     <TableHead>Timestamp</TableHead>
                     <TableHead>Filename</TableHead>
                     <TableHead>Result</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>Client IP</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {scanLogs.map((log) => (
                     <TableRow key={log.id}>
-                      <TableCell>{format(new Date(log.scan_date), 'yyyy-MM-dd HH:mm:ss')}</TableCell>
+                      <TableCell>{format(new Date(log.scan_time), 'yyyy-MM-dd HH:mm:ss')}</TableCell>
                       <TableCell className="font-medium">{log.filename}</TableCell>
                       <TableCell>
-                        <Badge variant={log.scan_result.startsWith("infected") ? "destructive" : "default"}>
+                        <Badge variant={log.scan_result === "INFECTED" ? "destructive" : "default"}>
                           {log.scan_result}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        <Badge variant={log.status === "error" ? "destructive" : "secondary"}>
-                          {log.status}
-                        </Badge>
-                      </TableCell>
+                      <TableCell>{log.client_ip}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

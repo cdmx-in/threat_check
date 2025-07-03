@@ -6,22 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { supabase } from "@/integrations/supabase/client";
+import { api, ScanLogEntry } from "@/services/api"; // Import the new API service
 import { format } from "date-fns";
 import { ArrowLeft } from "lucide-react";
 
-interface ScanResult {
-  id: string;
-  filename: string;
-  scan_date: string;
-  scan_result: string;
-  virus_name?: string;
-  status: string;
-}
-
 const ScanDetails: React.FC = () => {
   const { scanId } = useParams<{ scanId: string }>();
-  const [scanDetails, setScanDetails] = useState<ScanResult | null>(null);
+  const [scanDetails, setScanDetails] = useState<ScanLogEntry | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,21 +27,25 @@ const ScanDetails: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const { data, error } = await supabase
-        .from('scan_results')
-        .select('*')
-        .eq('id', scanId)
-        .single();
-
-      if (error) {
-        console.error("Error fetching scan details:", error);
-        setError("Failed to load scan details.");
-      } else if (!data) {
-        setError("Scan result not found.");
-      } else {
-        setScanDetails(data);
+      try {
+        // Fetch all history and then find the specific scanId
+        const { data, success } = await api.getScanHistory(1000); // Fetch a large enough limit to find the ID
+        if (success) {
+          const foundScan = data.find(scan => scan.id.toString() === scanId);
+          if (foundScan) {
+            setScanDetails(foundScan);
+          } else {
+            setError("Scan result not found.");
+          }
+        } else {
+          setError("Failed to load scan history from API.");
+        }
+      } catch (err: any) {
+        console.error("Error fetching scan details:", err);
+        setError(`Failed to load scan details: ${err.message}`);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchScanDetails();
@@ -101,7 +96,7 @@ const ScanDetails: React.FC = () => {
             <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
               {scanDetails.filename}
             </h3>
-            <Badge variant={scanDetails.scan_result.startsWith("infected") ? "destructive" : "default"}>
+            <Badge variant={scanDetails.scan_result === "INFECTED" ? "destructive" : "default"}>
               {scanDetails.scan_result}
             </Badge>
           </div>
@@ -113,19 +108,39 @@ const ScanDetails: React.FC = () => {
             <div className="p-3 border rounded-md bg-gray-50 dark:bg-gray-800">
               <p className="text-sm text-gray-500 dark:text-gray-400">Scan Date:</p>
               <p className="text-base font-medium text-gray-900 dark:text-gray-100">
-                {format(new Date(scanDetails.scan_date), 'yyyy-MM-dd HH:mm:ss')}
+                {format(new Date(scanDetails.scan_time), 'yyyy-MM-dd HH:mm:ss')}
               </p>
             </div>
             <div className="p-3 border rounded-md bg-gray-50 dark:bg-gray-800">
-              <p className="text-sm text-gray-500 dark:text-gray-400">Status:</p>
-              <p className="text-base font-medium text-gray-900 dark:text-gray-100">{scanDetails.status}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">File Size:</p>
+              <p className="text-base font-medium text-gray-900 dark:text-gray-100">{scanDetails.file_size} bytes</p>
             </div>
-            {scanDetails.virus_name && (
+            {scanDetails.threats_found && scanDetails.threats_found.length > 0 && (
               <div className="p-3 border rounded-md bg-gray-50 dark:bg-gray-800">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Virus Name:</p>
-                <p className="text-base font-medium text-gray-900 dark:text-gray-100">{scanDetails.virus_name}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Threats Found:</p>
+                <p className="text-base font-medium text-gray-900 dark:text-gray-100">{scanDetails.threats_found.join(', ')}</p>
               </div>
             )}
+            <div className="p-3 border rounded-md bg-gray-50 dark:bg-gray-800">
+              <p className="text-sm text-gray-500 dark:text-gray-400">MD5 Hash:</p>
+              <p className="text-base font-medium text-gray-900 dark:text-gray-100 break-all">{scanDetails.md5_hash}</p>
+            </div>
+            <div className="p-3 border rounded-md bg-gray-50 dark:bg-gray-800">
+              <p className="text-sm text-gray-500 dark:text-gray-400">SHA1 Hash:</p>
+              <p className="text-base font-medium text-gray-900 dark:text-gray-100 break-all">{scanDetails.sha1_hash}</p>
+            </div>
+            <div className="p-3 border rounded-md bg-gray-50 dark:bg-gray-800">
+              <p className="text-sm text-gray-500 dark:text-gray-400">SHA256 Hash:</p>
+              <p className="text-base font-medium text-gray-900 dark:text-gray-100 break-all">{scanDetails.sha256_hash}</p>
+            </div>
+            <div className="p-3 border rounded-md bg-gray-50 dark:bg-gray-800">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Client IP:</p>
+              <p className="text-base font-medium text-gray-900 dark:text-gray-100">{scanDetails.client_ip}</p>
+            </div>
+            <div className="p-3 border rounded-md bg-gray-50 dark:bg-gray-800">
+              <p className="text-sm text-gray-500 dark:text-gray-400">User Agent:</p>
+              <p className="text-base font-medium text-gray-900 dark:text-gray-100 break-all">{scanDetails.user_agent}</p>
+            </div>
           </div>
           <Button asChild variant="outline" className="w-full mt-4">
             <Link to="/history">

@@ -9,21 +9,21 @@ import { Input } from "@/components/ui/input";
 import { UploadCloud, XCircle, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client"; // Import supabase client
+import { api, SingleScanResponse } from "@/services/api"; // Import the new API service
 
-interface ScanResult {
+// Max file size from the new API spec is 100MB
+const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
+
+interface ScanResultDisplay {
   filename: string;
   status: "pending" | "uploading" | "scanning" | "clean" | "infected" | "error";
   virus_name?: string;
   progress: number;
 }
 
-// Reverting MAX_FILE_SIZE to 25MB, as FormData handles larger files more efficiently
-const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
-
 const FileUpload: React.FC = () => {
   const [files, setFiles] = useState<File[]>([]);
-  const [scanResults, setScanResults] = useState<ScanResult[]>([]);
+  const [scanResults, setScanResults] = useState<ScanResultDisplay[]>([]);
   const [uploading, setUploading] = useState(false);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -67,11 +67,6 @@ const FileUpload: React.FC = () => {
         );
         toast.info(`Preparing "${currentFileName}" for scan...`);
 
-        // Create FormData and append the file
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('filename', currentFileName); // Also send filename explicitly
-
         setScanResults(prev =>
           prev.map(result =>
             result.filename === currentFileName ? { ...result, status: "scanning", progress: 50 } : result
@@ -79,31 +74,21 @@ const FileUpload: React.FC = () => {
         );
         toast.info(`Sending "${currentFileName}" for scanning...`);
 
-        // Invoke the Edge Function with FormData
-        const { data: scanData, error: edgeFunctionError } = await supabase.functions.invoke('process-file-scan', {
-          body: formData, // Send FormData directly
-          // No need to set 'Content-Type': 'application/json' here, fetch handles multipart/form-data automatically
-        });
-
-        if (edgeFunctionError) {
-          throw new Error(`Scan API error: ${edgeFunctionError.message}`);
-        }
-
-        const { scan_result, virus_name, status } = scanData;
+        const scanData: SingleScanResponse = await api.scanFile(file);
 
         setScanResults(prev =>
           prev.map(result =>
             result.filename === currentFileName
               ? {
                   ...result,
-                  status: scan_result.startsWith("infected") ? "infected" : "clean",
-                  virus_name: virus_name,
+                  status: scanData.scanResult.isInfected ? "infected" : "clean",
+                  virus_name: scanData.scanResult.threats.length > 0 ? scanData.scanResult.threats[0] : undefined,
                   progress: 100,
                 }
               : result
           )
         );
-        toast.success(`Scan for "${currentFileName}" completed: ${scan_result}.`);
+        toast.success(`Scan for "${currentFileName}" completed: ${scanData.scanResult.isClean ? "Clean" : "Infected"}.`);
 
       } catch (error: any) {
         console.error("Scan process failed:", error);
@@ -190,7 +175,7 @@ const FileUpload: React.FC = () => {
                   )}
                   {result.status === "infected" && (
                     <span className="flex items-center text-red-600">
-                      <XCircle className="h-4 w-4 mr-1" /> Infected: {result.virus_name}
+                      <XCircle className="h-4 w-4 mr-1" /> Infected: {result.virus_name || "Unknown"}
                     </span>
                   )}
                   {result.status === "error" && (
