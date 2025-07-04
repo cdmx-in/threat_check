@@ -74,8 +74,10 @@ interface CurrentSignatureInfo {
 interface SignatureInfoResponse {
   success: boolean;
   timestamp: string; // date-time string
-  current: CurrentSignatureInfo;
-  updateHistory?: SignatureUpdateHistoryEntry[]; // Optional, as per swagger example
+  data: { // Added this nesting level
+    current: CurrentSignatureInfo;
+    updateHistory?: SignatureUpdateHistoryEntry[]; // This might also be nested here
+  };
 }
 
 interface SignatureUpdateHistoryEntry {

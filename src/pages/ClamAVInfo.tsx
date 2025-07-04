@@ -47,10 +47,11 @@ const ClamAVInfo: React.FC = () => {
     try {
       const data = await api.getSignatureInfo();
       console.log("Fetched current signature info:", data); // Added console log
-      if (data && data.current && Array.isArray(data.current.databases)) {
+      // Adjusted access to data.data.current and data.data.current.databases
+      if (data && data.data && data.data.current && Array.isArray(data.data.current.databases)) {
         setCurrentSignatureInfo(data);
       } else {
-        const errorMessage = "Received invalid data structure for current signature info. Expected 'current' object with 'databases' array.";
+        const errorMessage = "Received invalid data structure for current signature info. Expected 'data.current' object with 'databases' array.";
         console.error(errorMessage, data);
         setErrorCurrentInfo(errorMessage);
         toast.error(errorMessage);
@@ -140,7 +141,7 @@ const ClamAVInfo: React.FC = () => {
             </div>
           ) : errorCurrentInfo ? (
             <p className="text-lg text-red-600 dark:text-red-400 text-center">{errorCurrentInfo}</p>
-          ) : currentSignatureInfo && currentSignatureInfo.current ? (
+          ) : currentSignatureInfo && currentSignatureInfo.data && currentSignatureInfo.data.current ? (
             <div>
               <h3 className="text-xl font-semibold mb-4">Current Signature Status</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -148,19 +149,19 @@ const ClamAVInfo: React.FC = () => {
                 <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
                   <p className="text-sm text-gray-500 dark:text-gray-400">ClamAV Version:</p>
                   <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                    {currentSignatureInfo.current.version}
+                    {currentSignatureInfo.data.current.version}
                   </p>
                 </div>
                 <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
                   <p className="text-sm text-gray-500 dark:text-gray-400">Total Signatures:</p>
                   <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                    {currentSignatureInfo.current.totalSignatures.toLocaleString()}
+                    {currentSignatureInfo.data.current.totalSignatures.toLocaleString()}
                   </p>
                 </div>
                 <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
                   <p className="text-sm text-gray-500 dark:text-gray-400">Last Overall Update:</p>
                   <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                    {format(new Date(currentSignatureInfo.current.lastUpdate), 'yyyy-MM-dd HH:mm:ss')}
+                    {format(new Date(currentSignatureInfo.data.current.lastUpdate), 'yyyy-MM-dd HH:mm:ss')}
                   </p>
                 </div>
                 {/* Update Signatures Button */}
@@ -184,7 +185,7 @@ const ClamAVInfo: React.FC = () => {
               </div>
 
               {/* Table for Individual Databases */}
-              {currentSignatureInfo.current.databases && currentSignatureInfo.current.databases.length > 0 ? (
+              {currentSignatureInfo.data.current.databases && currentSignatureInfo.data.current.databases.length > 0 ? (
                 <div className="mt-8"> {/* Added margin top for separation */}
                   <h4 className="text-xl font-semibold mb-4">Individual Databases</h4>
                   <Table>
@@ -196,7 +197,7 @@ const ClamAVInfo: React.FC = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {currentSignatureInfo.current.databases.map((db, index) => (
+                      {currentSignatureInfo.data.current.databases.map((db, index) => (
                         <TableRow key={index}>
                           <TableCell className="font-medium">{db.name}</TableCell>
                           <TableCell>{db.signatures.toLocaleString()}</TableCell>
