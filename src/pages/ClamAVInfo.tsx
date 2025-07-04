@@ -60,18 +60,12 @@ const ClamAVInfo: React.FC = () => {
     setLoadingHistory(true);
     setErrorHistory(null);
     try {
-      const offset = (page - 1) * ITEMS_PER_PAGE;
-      const { data, count, success } = await api.getSignatureHistory(ITEMS_PER_PAGE, offset, search);
-      if (success) {
+      const response = await api.getSignatureHistory(ITEMS_PER_PAGE, (page - 1) * ITEMS_PER_PAGE, search);
+      if (response.success) {
         // Ensure data is an array before setting it
-        if (Array.isArray(data)) {
-          setSignatureHistory(data);
-          setTotalHistoryCount(count);
-        } else {
-          console.error("API returned non-array data for signature history:", data);
-          setErrorHistory("Invalid data format received for signature history.");
-          setSignatureHistory([]); // Set to empty array to prevent map error
-        }
+        const historyData = Array.isArray(response.data) ? response.data : [];
+        setSignatureHistory(historyData);
+        setTotalHistoryCount(response.count);
       } else {
         setErrorHistory("Failed to load signature history from API.");
       }
