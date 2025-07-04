@@ -108,7 +108,7 @@ const ScanDetails: React.FC = () => {
             <div className="p-3 border rounded-md bg-gray-50 dark:bg-gray-800">
               <p className="text-sm text-gray-500 dark:text-gray-400">Scan Date:</p>
               <p className="text-base font-medium text-gray-900 dark:text-gray-100">
-                {format(new Date(scanDetails.scan_time), 'yyyy-MM-dd HH:mm:ss')}
+                {format(new Date(scanDetails.scan_time), 'yyyy-MM-dd HH:mm:ss zzz')}
               </p>
             </div>
             <div className="p-3 border rounded-md bg-gray-50 dark:bg-gray-800">

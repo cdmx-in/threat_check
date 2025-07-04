@@ -88,7 +88,7 @@ const ScanHistory: React.FC = () => {
                         {scan.filename}
                       </Link>
                     </TableCell>
-                    <TableCell>{format(new Date(scan.scan_time), 'yyyy-MM-dd HH:mm:ss')}</TableCell>
+                    <TableCell>{format(new Date(scan.scan_time), 'yyyy-MM-dd HH:mm:ss zzz')}</TableCell>
                     <TableCell>
                       <Badge variant={scan.scan_result === "INFECTED" ? "destructive" : "default"}>
                         {scan.scan_result}
