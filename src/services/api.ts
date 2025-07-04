@@ -89,12 +89,15 @@ interface SignatureUpdateHistoryEntry {
   file_size: number | null;
 }
 
+// Updated SignatureHistoryResponse to match the actual API response
 interface SignatureHistoryResponse {
-  success: boolean;
-  count: number;
-  limit: number;
-  offset: number;
-  data: SignatureUpdateHistoryEntry[];
+  updates: SignatureUpdateHistoryEntry[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
 }
 
 interface SignatureUpdateResult {
