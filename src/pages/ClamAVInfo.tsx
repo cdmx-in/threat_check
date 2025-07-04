@@ -46,7 +46,15 @@ const ClamAVInfo: React.FC = () => {
     setErrorCurrentInfo(null);
     try {
       const data = await api.getSignatureInfo();
-      setCurrentSignatureInfo(data);
+      console.log("Fetched current signature info:", data); // Added console log
+      if (data && data.current && Array.isArray(data.current.databases)) {
+        setCurrentSignatureInfo(data);
+      } else {
+        const errorMessage = "Received invalid data structure for current signature info. Expected 'current' object with 'databases' array.";
+        console.error(errorMessage, data);
+        setErrorCurrentInfo(errorMessage);
+        toast.error(errorMessage);
+      }
     } catch (err: any) {
       console.error("Error fetching current signature info:", err);
       setErrorCurrentInfo(`Failed to load current signature info: ${err.message}`);
@@ -176,27 +184,31 @@ const ClamAVInfo: React.FC = () => {
               </div>
 
               {/* Table for Individual Databases */}
-              <div className="mt-8"> {/* Added margin top for separation */}
-                <h4 className="text-xl font-semibold mb-4">Individual Databases</h4>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Signatures</TableHead>
-                      <TableHead>Last Updated</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {currentSignatureInfo.current.databases.map((db, index) => (
-                      <TableRow key={index}>
-                        <TableCell className="font-medium">{db.name}</TableCell>
-                        <TableCell>{db.signatures.toLocaleString()}</TableCell>
-                        <TableCell>{format(new Date(db.lastUpdate), 'yyyy-MM-dd HH:mm:ss')}</TableCell>
+              {currentSignatureInfo.current.databases && currentSignatureInfo.current.databases.length > 0 ? (
+                <div className="mt-8"> {/* Added margin top for separation */}
+                  <h4 className="text-xl font-semibold mb-4">Individual Databases</h4>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Signatures</TableHead>
+                        <TableHead>Last Updated</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {currentSignatureInfo.current.databases.map((db, index) => (
+                        <TableRow key={index}>
+                          <TableCell className="font-medium">{db.name}</TableCell>
+                          <TableCell>{db.signatures.toLocaleString()}</TableCell>
+                          <TableCell>{format(new Date(db.lastUpdate), 'yyyy-MM-dd HH:mm:ss')}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <p className="text-center text-gray-500 dark:text-gray-400 mt-8">No individual database information available.</p>
+              )}
             </div>
           ) : null}
 
