@@ -47,11 +47,21 @@ const ClamAVInfo: React.FC = () => {
     try {
       const data = await api.getSignatureInfo();
       console.log("Fetched current signature info:", data); // Added console log
-      // Adjusted access to data.data.current and data.data.current.databases
-      if (data && data.data && data.data.current && Array.isArray(data.data.current.databases)) {
-        setCurrentSignatureInfo(data);
+      
+      if (data && data.data && data.data.current) {
+        // Now check if 'databases' property exists and is an array
+        if (Array.isArray(data.data.current.databases)) {
+          setCurrentSignatureInfo(data);
+        } else {
+          // This means data.data.current exists, but databases is not an array or is missing
+          const errorMessage = "API response for current signature info is missing or has an invalid 'databases' array within 'data.current'.";
+          console.error(errorMessage, data);
+          setErrorCurrentInfo(errorMessage);
+          toast.error(errorMessage);
+        }
       } else {
-        const errorMessage = "Received invalid data structure for current signature info. Expected 'data.current' object with 'databases' array.";
+        // This means data.data.current itself is missing or data.data is missing
+        const errorMessage = "Received invalid data structure for current signature info. Expected 'data.current' object within 'data'.";
         console.error(errorMessage, data);
         setErrorCurrentInfo(errorMessage);
         toast.error(errorMessage);
