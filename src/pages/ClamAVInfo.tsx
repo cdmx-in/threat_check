@@ -25,6 +25,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { toast } from "sonner"; // Ensure toast is imported
 
 const ITEMS_PER_PAGE = 10;
 
@@ -62,14 +63,14 @@ const ClamAVInfo: React.FC = () => {
       const offset = (page - 1) * ITEMS_PER_PAGE;
       const response: SignatureHistoryApiResponse = await api.getSignatureHistory(ITEMS_PER_PAGE, offset, search);
       
-      // The API response now directly contains 'data' and 'count' as per swagger.json
-      if (response && Array.isArray(response.data) && typeof response.count === 'number') {
-        setSignatureHistory(response.data);
-        setTotalHistoryCount(response.count);
+      // Correctly access 'updates' and 'total' from the nested 'data' object
+      if (response && response.data && Array.isArray(response.data.updates) && typeof response.data.pagination.total === 'number') {
+        setSignatureHistory(response.data.updates);
+        setTotalHistoryCount(response.data.pagination.total);
         setErrorHistory(null);
       } else {
         console.warn("API response for signature history was malformed. Received:", response);
-        setErrorHistory("Invalid data format received for signature history. Expected an object with 'data' (array) and 'count' properties.");
+        setErrorHistory("Invalid data format received for signature history. Expected an object with 'data.updates' (array) and 'data.pagination.total' properties.");
         setSignatureHistory([]);
         setTotalHistoryCount(0);
       }
