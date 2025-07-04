@@ -25,7 +25,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { toast } from "sonner"; // Ensure toast is imported
+import { toast } from "sonner";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -46,8 +46,6 @@ const ClamAVInfo: React.FC = () => {
     setErrorCurrentInfo(null);
     try {
       const data = await api.getSignatureInfo();
-      console.log("Fetched current signature info:", data);
-      
       if (data && data.data && data.data.current) {
         if (Array.isArray(data.data.current.databases)) {
           setCurrentSignatureInfo(data);
@@ -135,88 +133,95 @@ const ClamAVInfo: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center bg-gray-100 dark:bg-gray-950 p-4">
-      <Card className="w-full max-w-4xl mx-auto shadow-lg mt-8">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center">ClamAV Signature Information</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-8">
-          {loadingCurrentInfo ? (
-            <div className="text-center text-gray-600 dark:text-gray-400 flex items-center justify-center">
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading current signature info...
-            </div>
-          ) : errorCurrentInfo ? (
-            <p className="text-lg text-red-600 dark:text-red-400 text-center">{errorCurrentInfo}</p>
-          ) : currentSignatureInfo && currentSignatureInfo.data && currentSignatureInfo.data.current ? (
-            <div>
-              <h3 className="text-xl font-semibold mb-4">Current Signature Status</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">ClamAV Version:</p>
-                  <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                    {currentSignatureInfo.data.current.version}
-                  </p>
-                </div>
-                <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Total Signatures:</p>
-                  <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                    {currentSignatureInfo.data.current.totalSignatures.toLocaleString()}
-                  </p>
-                </div>
-                <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Last Overall Update:</p>
-                  <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                    {format(new Date(currentSignatureInfo.data.current.lastUpdate), 'yyyy-MM-dd HH:mm:ss')}
-                  </p>
-                </div>
-                <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
-                  <Button
-                    onClick={handleUpdateSignatures}
-                    disabled={updatingSignatures}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    {updatingSignatures ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating...
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw className="mr-2 h-4 w-4" /> Update Signatures
-                      </>
-                    )}
-                  </Button>
-                </div>
+      <div className="w-full max-w-4xl mx-auto space-y-8 mt-8">
+        {/* Card for Current Signature Information */}
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold text-center">Current ClamAV Signature Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {loadingCurrentInfo ? (
+              <div className="text-center text-gray-600 dark:text-gray-400 flex items-center justify-center py-8">
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading current signature info...
               </div>
-
-              {currentSignatureInfo.data.current.databases && currentSignatureInfo.data.current.databases.length > 0 ? (
-                <div className="mt-8">
-                  <h4 className="text-xl font-semibold mb-4">Current Signature Databases</h4>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Signatures</TableHead>
-                        <TableHead>Last Updated</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {currentSignatureInfo.data.current.databases.map((db, index) => (
-                        <TableRow key={index}>
-                          <TableCell className="font-medium">{db.name}</TableCell>
-                          <TableCell>{db.signatures.toLocaleString()}</TableCell>
-                          <TableCell>{format(new Date(db.lastUpdate), 'yyyy-MM-dd HH:mm:ss')}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+            ) : errorCurrentInfo ? (
+              <p className="text-lg text-red-600 dark:text-red-400 text-center py-8">{errorCurrentInfo}</p>
+            ) : currentSignatureInfo && currentSignatureInfo.data && currentSignatureInfo.data.current ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">ClamAV Version:</p>
+                    <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                      {currentSignatureInfo.data.current.version}
+                    </p>
+                  </div>
+                  <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Total Signatures:</p>
+                    <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                      {currentSignatureInfo.data.current.totalSignatures.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Last Overall Update:</p>
+                    <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                      {format(new Date(currentSignatureInfo.data.current.lastUpdate), 'yyyy-MM-dd HH:mm:ss')}
+                    </p>
+                  </div>
+                  <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
+                    <Button
+                      onClick={handleUpdateSignatures}
+                      disabled={updatingSignatures}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      {updatingSignatures ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="mr-2 h-4 w-4" /> Update Signatures
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
-              ) : (
-                <p className="text-center text-gray-500 dark:text-gray-400 mt-8">No individual database information available.</p>
-              )}
-            </div>
-          ) : null}
 
-          <div>
-            <h3 className="text-xl font-semibold mb-4">Signature Update History</h3>
+                {currentSignatureInfo.data.current.databases && currentSignatureInfo.data.current.databases.length > 0 ? (
+                  <div className="mt-6">
+                    <h4 className="text-xl font-semibold mb-4">Individual Signature Databases</h4>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Signatures</TableHead>
+                          <TableHead>Last Updated</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {currentSignatureInfo.data.current.databases.map((db, index) => (
+                          <TableRow key={index}>
+                            <TableCell className="font-medium">{db.name}</TableCell>
+                            <TableCell>{db.signatures.toLocaleString()}</TableCell>
+                            <TableCell>{format(new Date(db.lastUpdate), 'yyyy-MM-dd HH:mm:ss')}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <p className="text-center text-gray-500 dark:text-gray-400 mt-6">No individual database information available.</p>
+                )}
+              </>
+            ) : null}
+          </CardContent>
+        </Card>
+
+        {/* Card for Signature Update History */}
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold text-center">Signature Update History</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
             <div className="mb-4">
               <Input
                 placeholder="Search history by database name or status..."
@@ -226,13 +231,13 @@ const ClamAVInfo: React.FC = () => {
               />
             </div>
             {loadingHistory ? (
-              <div className="text-center text-gray-600 dark:text-gray-400 flex items-center justify-center">
+              <div className="text-center text-gray-600 dark:text-gray-400 flex items-center justify-center py-8">
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading update history...
               </div>
             ) : errorHistory ? (
-              <p className="text-lg text-red-600 dark:text-red-400 text-center">{errorHistory}</p>
+              <p className="text-lg text-red-600 dark:text-red-400 text-center py-8">{errorHistory}</p>
             ) : signatureHistory.length === 0 ? (
-              <p className="text-center text-gray-500 dark:text-gray-400">No signature update history found.</p>
+              <p className="text-center text-gray-500 dark:text-gray-400 py-8">No signature update history found.</p>
             ) : (
               <>
                 <Table>
@@ -291,9 +296,9 @@ const ClamAVInfo: React.FC = () => {
                 </Pagination>
               </>
             )}
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
       <MadeWithDyad />
     </div>
   );
