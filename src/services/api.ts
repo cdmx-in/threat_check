@@ -89,15 +89,13 @@ interface SignatureUpdateHistoryEntry {
   file_size: number | null;
 }
 
-// Updated SignatureHistoryResponse to match the actual API response
+// Updated SignatureHistoryResponse to match the actual API response from swagger.json
 interface SignatureHistoryResponse {
-  updates: SignatureUpdateHistoryEntry[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    pages: number;
-  };
+  success: boolean;
+  count: number;
+  limit: number;
+  offset: number;
+  data: SignatureUpdateHistoryEntry[];
 }
 
 interface SignatureUpdateResult {
@@ -205,6 +203,6 @@ export type {
   SignatureInfoResponse,
   SignatureDatabase,
   SignatureUpdateHistoryEntry,
-  SignatureHistoryResponse,
+  SignatureHistoryResponse, // Export the corrected type
   SignatureUpdateResponse,
 };

@@ -14,9 +14,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { api, SignatureInfoResponse, SignatureUpdateHistoryEntry, SignatureUpdateResponse, SignatureHistoryApiResponse } from "@/services/api";
+import { api, SignatureInfoResponse, SignatureUpdateHistoryEntry, SignatureUpdateResponse, SignatureHistoryResponse as SignatureHistoryApiResponse } from "@/services/api";
 import { format } from "date-fns";
-import { toast } from "sonner";
 import { Loader2, RefreshCw } from "lucide-react";
 import {
   Pagination,
@@ -63,14 +62,14 @@ const ClamAVInfo: React.FC = () => {
       const offset = (page - 1) * ITEMS_PER_PAGE;
       const response: SignatureHistoryApiResponse = await api.getSignatureHistory(ITEMS_PER_PAGE, offset, search);
       
-      // Check if the response has the expected structure
-      if (response && Array.isArray(response.updates) && response.pagination) {
-        setSignatureHistory(response.updates);
-        setTotalHistoryCount(response.pagination.total);
+      // The API response now directly contains 'data' and 'count' as per swagger.json
+      if (response && Array.isArray(response.data) && typeof response.count === 'number') {
+        setSignatureHistory(response.data);
+        setTotalHistoryCount(response.count);
         setErrorHistory(null);
       } else {
         console.warn("API response for signature history was malformed. Received:", response);
-        setErrorHistory("Invalid data format received for signature history. Expected an object with 'updates' (array) and 'pagination' properties.");
+        setErrorHistory("Invalid data format received for signature history. Expected an object with 'data' (array) and 'count' properties.");
         setSignatureHistory([]);
         setTotalHistoryCount(0);
       }
