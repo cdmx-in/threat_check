@@ -57,6 +57,62 @@ interface ErrorResponse {
   message?: string;
 }
 
+// New interfaces for ClamAV signature management
+interface SignatureDatabase {
+  name: string;
+  signatures: number;
+  lastUpdate: string; // date-time string
+}
+
+interface CurrentSignatureInfo {
+  version: string;
+  databases: SignatureDatabase[];
+  lastUpdate: string; // date-time string
+  totalSignatures: number;
+}
+
+interface SignatureInfoResponse {
+  success: boolean;
+  timestamp: string; // date-time string
+  current: CurrentSignatureInfo;
+  updateHistory?: SignatureUpdateHistoryEntry[]; // Optional, as per swagger example
+}
+
+interface SignatureUpdateHistoryEntry {
+  id: number;
+  database_name: string;
+  version: string;
+  signatures_count: number;
+  last_updated: string; // date-time string
+  update_status: "SUCCESS" | "FAILURE";
+  update_details: string;
+  file_size: number | null;
+}
+
+interface SignatureHistoryResponse {
+  success: boolean;
+  count: number;
+  limit: number;
+  offset: number;
+  data: SignatureUpdateHistoryEntry[];
+}
+
+interface SignatureUpdateResult {
+  updated: boolean;
+  databases: string[];
+  message: string;
+}
+
+interface SignatureUpdateResponse {
+  success: boolean;
+  timestamp: string;
+  updateResult: SignatureUpdateResult;
+  before: { totalSignatures: number };
+  after: { totalSignatures: number };
+  message: string;
+}
+
+
 export const api = {
   getHealth: async (): Promise<HealthResponse> => {
     const response = await fetch(`${BASE_URL}/health`);
@@ -96,6 +152,56 @@ export const api = {
     }
     return response.json();
   },
+
+  // New API functions for ClamAV signature management
+  getSignatureInfo: async (): Promise<SignatureInfoResponse> => {
+    const response = await fetch(`${BASE_URL}/api/signatures/info`);
+    if (!response.ok) {
+      const errorData: ErrorResponse = await response.json();
+      throw new Error(errorData.message || errorData.error || "Failed to fetch signature information");
+    }
+    return response.json();
+  },
+
+  getSignatureHistory: async (
+    limit: number = 10,
+    offset: number = 0,
+    search: string = ""
+  ): Promise<SignatureHistoryResponse> => {
+    const response = await fetch(
+      `${BASE_URL}/api/signatures/history?limit=${limit}&offset=${offset}&search=${encodeURIComponent(search)}`
+    );
+    if (!response.ok) {
+      const errorData: ErrorResponse = await response.json();
+      throw new Error(errorData.message || errorData.error || "Failed to fetch signature history");
+    }
+    return response.json();
+  },
+
+  updateSignatures: async (): Promise<SignatureUpdateResponse> => {
+    const response = await fetch(`${BASE_URL}/api/signatures/update`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({}), // Empty body as per swagger
+    });
+    if (!response.ok) {
+      const errorData: ErrorResponse = await response.json();
+      throw new Error(errorData.message || errorData.error || "Failed to update signatures");
+    }
+    return response.json();
+  },
 };
 
-export type { HealthResponse, SingleScanResponse, ScanLogEntry, ScanHistoryResponse };
+export type {
+  HealthResponse,
+  SingleScanResponse,
+  ScanLogEntry,
+  ScanHistoryResponse,
+  SignatureInfoResponse,
+  SignatureDatabase,
+  SignatureUpdateHistoryEntry,
+  SignatureHistoryResponse,
+  SignatureUpdateResponse,
+};

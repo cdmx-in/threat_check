@@ -3,7 +3,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Home, History, Settings } from "lucide-react"; // Removed LogOut, LogIn
+import { Home, History, Settings } from "lucide-react";
 
 const Navbar: React.FC = () => {
   return (
@@ -24,8 +24,8 @@ const Navbar: React.FC = () => {
             </Link>
           </Button>
           <Button asChild variant="ghost" className="text-primary-foreground hover:bg-primary/80">
-            <Link to="/admin">
-              <Settings className="mr-2 h-4 w-4" /> Admin
+            <Link to="/clamav-info"> {/* Updated link path and text */}
+              <Settings className="mr-2 h-4 w-4" /> ClamAV Info
             </Link>
           </Button>
         </div>
