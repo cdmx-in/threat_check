@@ -64,18 +64,28 @@ interface SignatureDatabase {
   lastUpdate: string; // date-time string
 }
 
-interface CurrentSignatureInfo { // Defined new interface for the nested data
+interface SignatureEntry { // New interface for individual signatures
+  name: string;
+  type: string;
+  database: string;
+  dateAdded: string; // date-time string
+  status: string;
+  isRepresentative: boolean;
+  representativeOf: number;
+}
+
+interface CurrentSignatureInfo {
   version: string;
   databases?: SignatureDatabase[]; // Made optional
+  signatures?: SignatureEntry[]; // Added new signatures array
   lastUpdate: string; // date-time string
   totalSignatures: number;
 }
 
-// Updated SignatureInfoResponse to directly contain CurrentSignatureInfo properties
 interface SignatureInfoResponse {
   success: boolean;
   timestamp: string; // date-time string
-  data: CurrentSignatureInfo; // Changed to use the new CurrentSignatureInfo interface
+  data: CurrentSignatureInfo;
 }
 
 interface SignatureUpdateHistoryEntry {
@@ -89,7 +99,6 @@ interface SignatureUpdateHistoryEntry {
   file_size: number | null;
 }
 
-// Updated SignatureHistoryResponse to match the actual API response from swagger.json
 interface SignatureHistoryResponse {
   success: boolean;
   timestamp: string;
@@ -207,8 +216,9 @@ export type {
   ScanHistoryResponse,
   SignatureInfoResponse,
   SignatureDatabase,
-  CurrentSignatureInfo, // Export the new interface
+  SignatureEntry, // Export the new interface
+  CurrentSignatureInfo,
   SignatureUpdateHistoryEntry,
-  SignatureHistoryResponse, // Export the corrected type
+  SignatureHistoryResponse,
   SignatureUpdateResponse,
 };

@@ -48,7 +48,6 @@ const ClamAVInfo: React.FC = () => {
       const data = await api.getSignatureInfo();
       console.log("Fetched current signature info:", data);
       
-      // Only check if data and data.data exist. The rendering logic will handle optional 'databases'.
       if (data && data.data) {
         setCurrentSignatureInfo(data);
       } else {
@@ -206,6 +205,38 @@ const ClamAVInfo: React.FC = () => {
                   </div>
                 ) : (
                   <p className="text-center text-gray-500 dark:text-gray-400 mt-6">No individual database information available.</p>
+                )}
+
+                {currentSignatureInfo.data.signatures && currentSignatureInfo.data.signatures.length > 0 && (
+                  <div className="mt-6">
+                    <h4 className="text-xl font-semibold mb-4">Recent Signatures</h4>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Database</TableHead>
+                          <TableHead>Date Added</TableHead>
+                          <TableHead>Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {currentSignatureInfo.data.signatures.map((sig, index) => (
+                          <TableRow key={index}>
+                            <TableCell className="font-medium">{sig.name}</TableCell>
+                            <TableCell>{sig.type}</TableCell>
+                            <TableCell>{sig.database}</TableCell>
+                            <TableCell>{format(new Date(sig.dateAdded), 'yyyy-MM-dd HH:mm:ss')}</TableCell>
+                            <TableCell>
+                              <Badge variant={sig.status === "active" ? "default" : "secondary"}>
+                                {sig.status}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 )}
               </>
             ) : null}
