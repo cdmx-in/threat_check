@@ -71,13 +71,11 @@ interface CurrentSignatureInfo {
   totalSignatures: number;
 }
 
+// Updated SignatureInfoResponse to directly contain CurrentSignatureInfo
 interface SignatureInfoResponse {
   success: boolean;
   timestamp: string; // date-time string
-  data: { // Added this nesting level
-    current: CurrentSignatureInfo;
-    updateHistory?: SignatureUpdateHistoryEntry[]; // This might also be nested here
-  };
+  data: CurrentSignatureInfo; // Changed from { current: CurrentSignatureInfo; ... }
 }
 
 interface SignatureUpdateHistoryEntry {

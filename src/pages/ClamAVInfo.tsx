@@ -46,17 +46,13 @@ const ClamAVInfo: React.FC = () => {
     setErrorCurrentInfo(null);
     try {
       const data = await api.getSignatureInfo();
-      if (data && data.data && data.data.current) {
-        if (Array.isArray(data.data.current.databases)) {
-          setCurrentSignatureInfo(data);
-        } else {
-          const errorMessage = "API response for current signature info is missing or has an invalid 'databases' array within 'data.current'.";
-          console.error(errorMessage, data);
-          setErrorCurrentInfo(errorMessage);
-          toast.error(errorMessage);
-        }
+      console.log("Fetched current signature info:", data);
+      
+      // Now, data.data should directly be CurrentSignatureInfo
+      if (data && data.data && Array.isArray(data.data.databases)) {
+        setCurrentSignatureInfo(data);
       } else {
-        const errorMessage = "Received invalid data structure for current signature info. Expected 'data.current' object within 'data'.";
+        const errorMessage = "API response for current signature info is missing or has an invalid 'databases' array within 'data'.";
         console.error(errorMessage, data);
         setErrorCurrentInfo(errorMessage);
         toast.error(errorMessage);
@@ -146,25 +142,25 @@ const ClamAVInfo: React.FC = () => {
               </div>
             ) : errorCurrentInfo ? (
               <p className="text-lg text-red-600 dark:text-red-400 text-center py-8">{errorCurrentInfo}</p>
-            ) : currentSignatureInfo && currentSignatureInfo.data && currentSignatureInfo.data.current ? (
+            ) : currentSignatureInfo && currentSignatureInfo.data ? ( // Check currentSignatureInfo.data directly
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
                     <p className="text-sm text-gray-500 dark:text-gray-400">ClamAV Version:</p>
                     <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                      {currentSignatureInfo.data.current.version}
+                      {currentSignatureInfo.data.version} {/* Access data.version directly */}
                     </p>
                   </div>
                   <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
                     <p className="text-sm text-gray-500 dark:text-gray-400">Total Signatures:</p>
                     <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                      {currentSignatureInfo.data.current.totalSignatures.toLocaleString()}
+                      {currentSignatureInfo.data.totalSignatures.toLocaleString()} {/* Access data.totalSignatures directly */}
                     </p>
                   </div>
                   <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
                     <p className="text-sm text-gray-500 dark:text-gray-400">Last Overall Update:</p>
                     <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                      {format(new Date(currentSignatureInfo.data.current.lastUpdate), 'yyyy-MM-dd HH:mm:ss')}
+                      {format(new Date(currentSignatureInfo.data.lastUpdate), 'yyyy-MM-dd HH:mm:ss')} {/* Access data.lastUpdate directly */}
                     </p>
                   </div>
                   <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
@@ -186,7 +182,7 @@ const ClamAVInfo: React.FC = () => {
                   </div>
                 </div>
 
-                {currentSignatureInfo.data.current.databases && currentSignatureInfo.data.current.databases.length > 0 ? (
+                {currentSignatureInfo.data.databases && currentSignatureInfo.data.databases.length > 0 ? (
                   <div className="mt-6">
                     <h4 className="text-xl font-semibold mb-4">Individual Signature Databases</h4>
                     <Table>
@@ -198,7 +194,7 @@ const ClamAVInfo: React.FC = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {currentSignatureInfo.data.current.databases.map((db, index) => (
+                        {currentSignatureInfo.data.databases.map((db, index) => (
                           <TableRow key={index}>
                             <TableCell className="font-medium">{db.name}</TableCell>
                             <TableCell>{db.signatures.toLocaleString()}</TableCell>
