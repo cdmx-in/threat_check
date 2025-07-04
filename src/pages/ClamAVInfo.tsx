@@ -48,11 +48,11 @@ const ClamAVInfo: React.FC = () => {
       const data = await api.getSignatureInfo();
       console.log("Fetched current signature info:", data);
       
-      // Check if data.data exists and data.data.databases is an array
-      if (data && data.data && Array.isArray(data.data.databases)) {
+      // Only check if data and data.data exist. The rendering logic will handle optional 'databases'.
+      if (data && data.data) {
         setCurrentSignatureInfo(data);
       } else {
-        const errorMessage = "API response for current signature info is missing or has an invalid 'data' object or 'databases' array.";
+        const errorMessage = "API response for current signature info is missing or has an invalid 'data' object.";
         console.error(errorMessage, data);
         setErrorCurrentInfo(errorMessage);
         toast.error(errorMessage);

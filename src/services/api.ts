@@ -66,7 +66,7 @@ interface SignatureDatabase {
 
 interface CurrentSignatureInfo { // Defined new interface for the nested data
   version: string;
-  databases: SignatureDatabase[];
+  databases?: SignatureDatabase[]; // Made optional
   lastUpdate: string; // date-time string
   totalSignatures: number;
 }
