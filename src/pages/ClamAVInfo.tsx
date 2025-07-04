@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { api, SignatureInfoResponse, SignatureUpdateHistoryEntry, SignatureUpdateResponse } from "@/services/api";
-import { format } from "date-fns";
+import { format }date-fns";
 import { toast } from "sonner";
 import { Loader2, RefreshCw } from "lucide-react";
 import {
@@ -62,14 +62,35 @@ const ClamAVInfo: React.FC = () => {
     try {
       const offset = (page - 1) * ITEMS_PER_PAGE;
       const response = await api.getSignatureHistory(ITEMS_PER_PAGE, offset, search);
-      console.log("API Response for signature history:", response); // Added for debugging
+      console.log("Full API Response for signature history:", response); // Log the full response
+
       if (response.success) {
-        // Ensure data is an array before setting it
-        const historyData = Array.isArray(response.data) ? response.data : [];
+        let historyData: SignatureUpdateHistoryEntry[] = [];
+        let totalCount = 0;
+
+        // Check if response.data is directly an array
+        if (Array.isArray(response.data)) {
+          historyData = response.data;
+          totalCount = response.count; // Assuming count is always at the top level
+          console.log("Signature history data is directly an array:", historyData);
+        } else if (response.data && typeof response.data === 'object' && 'data' in response.data && Array.isArray(response.data.data)) {
+          // If data is nested like { data: [...] }
+          historyData = response.data.data;
+          totalCount = response.count; // Assuming count is always at the top level
+          console.log("Signature history data is nested under 'data' key:", historyData);
+        } else {
+          // Fallback if data is not an array or not nested as expected
+          console.warn("API response 'data' field is not an array or expected nested structure. Received:", response.data);
+          setErrorHistory("Invalid data format received for signature history. Expected an array.");
+        }
+        
         setSignatureHistory(historyData);
-        setTotalHistoryCount(response.count);
+        setTotalHistoryCount(totalCount);
+        console.log("State updated with signature history:", historyData);
+        console.log("Total history count updated to:", totalCount);
+
       } else {
-        setErrorHistory("Failed to load signature history from API.");
+        setErrorHistory("Failed to load signature history from API: " + (response.message || response.error || "Unknown error"));
       }
     } catch (err: any) {
       console.error("Error fetching signature history:", err);
