@@ -64,7 +64,7 @@ interface SignatureDatabase {
   lastUpdate: string; // date-time string
 }
 
-interface CurrentSignatureInfo {
+interface CurrentSignatureInfo { // Defined new interface for the nested data
   version: string;
   databases: SignatureDatabase[];
   lastUpdate: string; // date-time string
@@ -75,10 +75,7 @@ interface CurrentSignatureInfo {
 interface SignatureInfoResponse {
   success: boolean;
   timestamp: string; // date-time string
-  version: string;
-  databases: SignatureDatabase[];
-  lastUpdate: string; // date-time string
-  totalSignatures: number;
+  data: CurrentSignatureInfo; // Changed to use the new CurrentSignatureInfo interface
 }
 
 interface SignatureUpdateHistoryEntry {
@@ -210,6 +207,7 @@ export type {
   ScanHistoryResponse,
   SignatureInfoResponse,
   SignatureDatabase,
+  CurrentSignatureInfo, // Export the new interface
   SignatureUpdateHistoryEntry,
   SignatureHistoryResponse, // Export the corrected type
   SignatureUpdateResponse,

@@ -48,11 +48,11 @@ const ClamAVInfo: React.FC = () => {
       const data = await api.getSignatureInfo();
       console.log("Fetched current signature info:", data);
       
-      // Now, 'data' itself is the SignatureInfoResponse (flattened)
-      if (data && Array.isArray(data.databases)) {
+      // Check if data.data exists and data.data.databases is an array
+      if (data && data.data && Array.isArray(data.data.databases)) {
         setCurrentSignatureInfo(data);
       } else {
-        const errorMessage = "API response for current signature info is missing or has an invalid 'databases' array.";
+        const errorMessage = "API response for current signature info is missing or has an invalid 'data' object or 'databases' array.";
         console.error(errorMessage, data);
         setErrorCurrentInfo(errorMessage);
         toast.error(errorMessage);
@@ -148,19 +148,19 @@ const ClamAVInfo: React.FC = () => {
                   <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
                     <p className="text-sm text-gray-500 dark:text-gray-400">ClamAV Version:</p>
                     <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                      {currentSignatureInfo.version}
+                      {currentSignatureInfo.data.version}
                     </p>
                   </div>
                   <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
                     <p className="text-sm text-gray-500 dark:text-gray-400">Total Signatures:</p>
                     <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                      {currentSignatureInfo.totalSignatures.toLocaleString()}
+                      {currentSignatureInfo.data.totalSignatures.toLocaleString()}
                     </p>
                   </div>
                   <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
                     <p className="text-sm text-gray-500 dark:text-gray-400">Last Overall Update:</p>
                     <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                      {format(new Date(currentSignatureInfo.lastUpdate), 'yyyy-MM-dd HH:mm:ss')}
+                      {format(new Date(currentSignatureInfo.data.lastUpdate), 'yyyy-MM-dd HH:mm:ss')}
                     </p>
                   </div>
                   <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
@@ -182,7 +182,7 @@ const ClamAVInfo: React.FC = () => {
                   </div>
                 </div>
 
-                {currentSignatureInfo.databases && currentSignatureInfo.databases.length > 0 ? (
+                {currentSignatureInfo.data.databases && currentSignatureInfo.data.databases.length > 0 ? (
                   <div className="mt-6">
                     <h4 className="text-xl font-semibold mb-4">Individual Signature Databases</h4>
                     <Table>
@@ -194,7 +194,7 @@ const ClamAVInfo: React.FC = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {currentSignatureInfo.databases.map((db, index) => (
+                        {currentSignatureInfo.data.databases.map((db, index) => (
                           <TableRow key={index}>
                             <TableCell className="font-medium">{db.name}</TableCell>
                             <TableCell>{db.signatures.toLocaleString()}</TableCell>
