@@ -1,4 +1,4 @@
-const BASE_URL = "http://localhost:3000"; // Updated to the new host
+const BASE_URL = "http://localhost:3765"; // Updated to the new host
 
 interface HealthResponse {
   status: "healthy" | "unhealthy";
@@ -92,15 +92,10 @@ interface SignatureUpdateHistoryEntry {
 // Updated SignatureHistoryResponse to match the actual API response from swagger.json
 interface SignatureHistoryResponse {
   success: boolean;
-  timestamp: string;
-  data: {
-    updates: SignatureUpdateHistoryEntry[];
-    pagination: {
-      total: number;
-      limit: number;
-      offset: number;
-    };
-  };
+  count: number;
+  limit: number;
+  offset: number;
+  data: SignatureUpdateHistoryEntry[];
 }
 
 interface SignatureUpdateResult {

@@ -49,7 +49,7 @@ const ClamAVInfo: React.FC = () => {
     } catch (err: any) {
       console.error("Error fetching current signature info:", err);
       setErrorCurrentInfo(`Failed to load current signature info: ${err.message}`);
-      // toast.error(`Failed to load current signature info: ${err.message}`); // Removed duplicate toast
+      toast.error(`Failed to load current signature info: ${err.message}`);
     } finally {
       setLoadingCurrentInfo(false);
     }
@@ -62,21 +62,21 @@ const ClamAVInfo: React.FC = () => {
       const offset = (page - 1) * ITEMS_PER_PAGE;
       const response: SignatureHistoryApiResponse = await api.getSignatureHistory(ITEMS_PER_PAGE, offset, search);
       
-      // Correctly access 'updates' array and 'total' count from the 'data' object
-      if (response && response.data && Array.isArray(response.data.updates) && typeof response.data.pagination?.total === 'number') {
-        setSignatureHistory(response.data.updates);
-        setTotalHistoryCount(response.data.pagination.total);
+      // The API response now directly contains 'data' and 'count' as per swagger.json
+      if (response && Array.isArray(response.data) && typeof response.count === 'number') {
+        setSignatureHistory(response.data);
+        setTotalHistoryCount(response.count);
         setErrorHistory(null);
       } else {
         console.warn("API response for signature history was malformed. Received:", response);
-        setErrorHistory("Invalid data format received for signature history. Expected an object with 'data.updates' (array) and 'data.pagination.total' properties.");
+        setErrorHistory("Invalid data format received for signature history. Expected an object with 'data' (array) and 'count' properties.");
         setSignatureHistory([]);
         setTotalHistoryCount(0);
       }
     } catch (err: any) {
       console.error("Error fetching signature history:", err);
       setErrorHistory(`Failed to load signature history: ${err.message}`);
-      // toast.error(`Failed to load signature history: ${err.message}`); // Removed duplicate toast
+      toast.error(`Failed to load signature history: ${err.message}`);
     } finally {
       setLoadingHistory(false);
     }
@@ -92,7 +92,7 @@ const ClamAVInfo: React.FC = () => {
 
   const handleUpdateSignatures = async () => {
     setUpdatingSignatures(true);
-    // toast.info("Initiating signature update..."); // Removed duplicate toast
+    toast.info("Initiating signature update...");
     try {
       const response: SignatureUpdateResponse = await api.updateSignatures();
       if (response.success) {
