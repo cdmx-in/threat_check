@@ -92,10 +92,15 @@ interface SignatureUpdateHistoryEntry {
 // Updated SignatureHistoryResponse to match the actual API response from swagger.json
 interface SignatureHistoryResponse {
   success: boolean;
-  count: number;
-  limit: number;
-  offset: number;
-  data: SignatureUpdateHistoryEntry[];
+  timestamp: string;
+  data: {
+    updates: SignatureUpdateHistoryEntry[];
+    pagination: {
+      total: number;
+      limit: number;
+      offset: number;
+    };
+  };
 }
 
 interface SignatureUpdateResult {
