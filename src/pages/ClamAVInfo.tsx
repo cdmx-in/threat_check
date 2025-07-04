@@ -46,21 +46,18 @@ const ClamAVInfo: React.FC = () => {
     setErrorCurrentInfo(null);
     try {
       const data = await api.getSignatureInfo();
-      console.log("Fetched current signature info:", data); // Added console log
+      console.log("Fetched current signature info:", data);
       
       if (data && data.data && data.data.current) {
-        // Now check if 'databases' property exists and is an array
         if (Array.isArray(data.data.current.databases)) {
           setCurrentSignatureInfo(data);
         } else {
-          // This means data.data.current exists, but databases is not an array or is missing
           const errorMessage = "API response for current signature info is missing or has an invalid 'databases' array within 'data.current'.";
           console.error(errorMessage, data);
           setErrorCurrentInfo(errorMessage);
           toast.error(errorMessage);
         }
       } else {
-        // This means data.data.current itself is missing or data.data is missing
         const errorMessage = "Received invalid data structure for current signature info. Expected 'data.current' object within 'data'.";
         console.error(errorMessage, data);
         setErrorCurrentInfo(errorMessage);
@@ -82,7 +79,6 @@ const ClamAVInfo: React.FC = () => {
       const offset = (page - 1) * ITEMS_PER_PAGE;
       const response: SignatureHistoryApiResponse = await api.getSignatureHistory(ITEMS_PER_PAGE, offset, search);
       
-      // Correctly access 'updates' and 'total' from the nested 'data' object
       if (response && response.data && Array.isArray(response.data.updates) && typeof response.data.pagination.total === 'number') {
         setSignatureHistory(response.data.updates);
         setTotalHistoryCount(response.data.pagination.total);
@@ -117,7 +113,6 @@ const ClamAVInfo: React.FC = () => {
       const response: SignatureUpdateResponse = await api.updateSignatures();
       if (response.success) {
         toast.success("ClamAV signatures updated successfully!");
-        // Refresh current info and history after successful update
         fetchSignatureInfo();
         fetchSignatureHistory(currentPage, searchTerm);
       } else {
@@ -133,7 +128,7 @@ const ClamAVInfo: React.FC = () => {
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
-    setCurrentPage(1); // Reset to first page on new search
+    setCurrentPage(1);
   };
 
   const totalPages = Math.ceil(totalHistoryCount / ITEMS_PER_PAGE);
@@ -155,7 +150,6 @@ const ClamAVInfo: React.FC = () => {
             <div>
               <h3 className="text-xl font-semibold mb-4">Current Signature Status</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Summary Cards */}
                 <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
                   <p className="text-sm text-gray-500 dark:text-gray-400">ClamAV Version:</p>
                   <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
@@ -174,7 +168,6 @@ const ClamAVInfo: React.FC = () => {
                     {format(new Date(currentSignatureInfo.data.current.lastUpdate), 'yyyy-MM-dd HH:mm:ss')}
                   </p>
                 </div>
-                {/* Update Signatures Button */}
                 <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
                   <Button
                     onClick={handleUpdateSignatures}
@@ -194,10 +187,9 @@ const ClamAVInfo: React.FC = () => {
                 </div>
               </div>
 
-              {/* Table for Individual Databases */}
               {currentSignatureInfo.data.current.databases && currentSignatureInfo.data.current.databases.length > 0 ? (
-                <div className="mt-8"> {/* Added margin top for separation */}
-                  <h4 className="text-xl font-semibold mb-4">Individual Databases</h4>
+                <div className="mt-8">
+                  <h4 className="text-xl font-semibold mb-4">Current Signature Databases</h4>
                   <Table>
                     <TableHeader>
                       <TableRow>
