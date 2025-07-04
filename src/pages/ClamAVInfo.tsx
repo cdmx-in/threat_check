@@ -126,7 +126,7 @@ const ClamAVInfo: React.FC = () => {
             </div>
           ) : errorCurrentInfo ? (
             <p className="text-lg text-red-600 dark:text-red-400 text-center">{errorCurrentInfo}</p>
-          ) : currentSignatureInfo ? (
+          ) : currentSignatureInfo && currentSignatureInfo.current ? (
             <div>
               <h3 className="text-xl font-semibold mb-4">Current Signature Status</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
