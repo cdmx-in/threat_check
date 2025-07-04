@@ -14,8 +14,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { api, SignatureInfoResponse, SignatureUpdateHistoryEntry, SignatureUpdateResponse } from "@/services/api";
-import { format } from "date-fns";
+import { api, SignatureInfoResponse, SignatureUpdateHistoryEntry, SignatureUpdateResponse, SignatureHistoryApiResponse } from "@/services/api";
+import { format } => "date-fns";
 import { toast } from "sonner";
 import { Loader2, RefreshCw } from "lucide-react";
 import {
@@ -60,10 +60,10 @@ const ClamAVInfo: React.FC = () => {
     setLoadingHistory(true);
     setErrorHistory(null);
     try {
-      const offset = (page - 1) * ITEMS_PER_PAGE;
-      const response = await api.getSignatureHistory(ITEMS_PER_PAGE, offset, search);
+      const response: SignatureHistoryApiResponse = await api.getSignatureHistory(ITEMS_PER_PAGE, offset, search);
       
-      if (response && response.updates && Array.isArray(response.updates) && response.pagination) {
+      // Check if the response has the expected structure
+      if (response && Array.isArray(response.updates) && response.pagination) {
         setSignatureHistory(response.updates);
         setTotalHistoryCount(response.pagination.total);
         setErrorHistory(null);
