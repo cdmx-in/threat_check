@@ -60,7 +60,9 @@ const ClamAVInfo: React.FC = () => {
     setLoadingHistory(true);
     setErrorHistory(null);
     try {
-      const response = await api.getSignatureHistory(ITEMS_PER_PAGE, (page - 1) * ITEMS_PER_PAGE, search);
+      const offset = (page - 1) * ITEMS_PER_PAGE;
+      const response = await api.getSignatureHistory(ITEMS_PER_PAGE, offset, search);
+      console.log("API Response for signature history:", response); // Added for debugging
       if (response.success) {
         // Ensure data is an array before setting it
         const historyData = Array.isArray(response.data) ? response.data : [];
