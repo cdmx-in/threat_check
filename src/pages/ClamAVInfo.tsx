@@ -136,6 +136,7 @@ const ClamAVInfo: React.FC = () => {
             <div>
               <h3 className="text-xl font-semibold mb-4">Current Signature Status</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Summary Cards */}
                 <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
                   <p className="text-sm text-gray-500 dark:text-gray-400">ClamAV Version:</p>
                   <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
@@ -148,23 +149,13 @@ const ClamAVInfo: React.FC = () => {
                     {currentSignatureInfo.current.totalSignatures.toLocaleString()}
                   </p>
                 </div>
-                <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800 col-span-full">
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Databases:</p>
-                  <ul className="list-disc list-inside space-y-1">
-                    {currentSignatureInfo.current.databases.map((db, index) => (
-                      <li key={index} className="text-base text-gray-900 dark:text-gray-100">
-                        <span className="font-medium">{db.name}:</span> {db.signatures.toLocaleString()} signatures, last updated{" "}
-                        {format(new Date(db.lastUpdate), 'yyyy-MM-dd HH:mm:ss')}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
                 <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
                   <p className="text-sm text-gray-500 dark:text-gray-400">Last Overall Update:</p>
                   <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
                     {format(new Date(currentSignatureInfo.current.lastUpdate), 'yyyy-MM-dd HH:mm:ss')}
                   </p>
                 </div>
+                {/* Update Signatures Button */}
                 <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
                   <Button
                     onClick={handleUpdateSignatures}
@@ -182,6 +173,29 @@ const ClamAVInfo: React.FC = () => {
                     )}
                   </Button>
                 </div>
+              </div>
+
+              {/* Table for Individual Databases */}
+              <div className="mt-8"> {/* Added margin top for separation */}
+                <h4 className="text-xl font-semibold mb-4">Individual Databases</h4>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Signatures</TableHead>
+                      <TableHead>Last Updated</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {currentSignatureInfo.current.databases.map((db, index) => (
+                      <TableRow key={index}>
+                        <TableCell className="font-medium">{db.name}</TableCell>
+                        <TableCell>{db.signatures.toLocaleString()}</TableCell>
+                        <TableCell>{format(new Date(db.lastUpdate), 'yyyy-MM-dd HH:mm:ss')}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             </div>
           ) : null}
