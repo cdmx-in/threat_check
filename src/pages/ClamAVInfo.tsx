@@ -60,26 +60,25 @@ const ClamAVInfo: React.FC = () => {
     setLoadingHistory(true);
     setErrorHistory(null);
     try {
-      const offset = (page - 1) * ITEMS_PER_PAGE;
-      const response = await api.getSignatureHistory(ITEMS_PER_PAGE, offset, search);
+      // The API response for history is not directly typed as SignatureHistoryResponse
+      // It returns { updates: SignatureUpdateHistoryEntry[], pagination: { total: number, ... } }
+      const response: { updates: SignatureUpdateHistoryEntry[], pagination: { total: number, page: number, limit: number, pages: number } } = await api.getSignatureHistory(ITEMS_PER_PAGE, offset, search);
       
-      if (response.success) {
-        // Ensure response.data is an array. If not, default to an empty array.
-        const historyData: SignatureUpdateHistoryEntry[] = Array.isArray(response.data)
-          ? response.data
-          : [];
-        
-        setSignatureHistory(historyData);
-        setTotalHistoryCount(response.count);
-        
-        if (!Array.isArray(response.data)) {
-          console.warn("API response 'data' field was not an array as expected. Received:", response.data);
-          setErrorHistory("Invalid data format received for signature history. Expected an array.");
+      if (response) { // Check if response itself is valid
+        if (Array.isArray(response.updates)) {
+          setSignatureHistory(response.updates);
+          setTotalHistoryCount(response.pagination.total);
+          setErrorHistory(null); // Clear any previous error
         } else {
-          setErrorHistory(null); // Clear any previous error if data is now valid
+          console.warn("API response 'updates' field was not an array as expected. Received:", response.updates);
+          setErrorHistory("Invalid data format received for signature history. Expected an array under 'updates'.");
+          setSignatureHistory([]); // Ensure it's an empty array to prevent rendering issues
+          setTotalHistoryCount(0);
         }
       } else {
-        setErrorHistory("Failed to load signature history from API: " + (response.message || response.error || "Unknown error"));
+        setErrorHistory("Failed to load signature history from API: Empty or invalid response.");
+        setSignatureHistory([]);
+        setTotalHistoryCount(0);
       }
     } catch (err: any) {
       console.error("Error fetching signature history:", err);
