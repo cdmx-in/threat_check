@@ -71,11 +71,14 @@ interface CurrentSignatureInfo {
   totalSignatures: number;
 }
 
-// Updated SignatureInfoResponse to directly contain CurrentSignatureInfo
+// Updated SignatureInfoResponse to directly contain CurrentSignatureInfo properties
 interface SignatureInfoResponse {
   success: boolean;
   timestamp: string; // date-time string
-  data: CurrentSignatureInfo; // Changed from { current: CurrentSignatureInfo; ... }
+  version: string;
+  databases: SignatureDatabase[];
+  lastUpdate: string; // date-time string
+  totalSignatures: number;
 }
 
 interface SignatureUpdateHistoryEntry {
