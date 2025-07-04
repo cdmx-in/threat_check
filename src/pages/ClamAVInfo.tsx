@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { api, SignatureInfoResponse, SignatureUpdateHistoryEntry, SignatureUpdateResponse } from "@/services/api";
-import { format } from "date-fns"; // Corrected import statement
+import { format } from "date-fns";
 import { toast } from "sonner";
 import { Loader2, RefreshCw } from "lucide-react";
 import {
@@ -60,22 +60,16 @@ const ClamAVInfo: React.FC = () => {
     setLoadingHistory(true);
     setErrorHistory(null);
     try {
-      const offset = (page - 1) * ITEMS_PER_PAGE; // Define offset here
-      const response: { updates: SignatureUpdateHistoryEntry[], pagination: { total: number, page: number, limit: number, pages: number } } = await api.getSignatureHistory(ITEMS_PER_PAGE, offset, search);
+      const offset = (page - 1) * ITEMS_PER_PAGE;
+      const response = await api.getSignatureHistory(ITEMS_PER_PAGE, offset, search);
       
-      if (response) { // Check if response itself is valid
-        if (Array.isArray(response.updates)) {
-          setSignatureHistory(response.updates);
-          setTotalHistoryCount(response.pagination.total);
-          setErrorHistory(null); // Clear any previous error
-        } else {
-          console.warn("API response 'updates' field was not an array as expected. Received:", response.updates);
-          setErrorHistory("Invalid data format received for signature history. Expected an array under 'updates'.");
-          setSignatureHistory([]); // Ensure it's an empty array to prevent rendering issues
-          setTotalHistoryCount(0);
-        }
+      if (response && response.updates && Array.isArray(response.updates) && response.pagination) {
+        setSignatureHistory(response.updates);
+        setTotalHistoryCount(response.pagination.total);
+        setErrorHistory(null);
       } else {
-        setErrorHistory("Failed to load signature history from API: Empty or invalid response.");
+        console.warn("API response for signature history was malformed. Received:", response);
+        setErrorHistory("Invalid data format received for signature history. Expected an object with 'updates' (array) and 'pagination' properties.");
         setSignatureHistory([]);
         setTotalHistoryCount(0);
       }
