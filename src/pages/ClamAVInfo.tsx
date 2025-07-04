@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { api, SignatureInfoResponse, SignatureUpdateHistoryEntry, SignatureUpdateResponse, SignatureHistoryApiResponse } from "@/services/api";
-import { format } => "date-fns";
+import { format } from "date-fns";
 import { toast } from "sonner";
 import { Loader2, RefreshCw } from "lucide-react";
 import {
@@ -60,6 +60,7 @@ const ClamAVInfo: React.FC = () => {
     setLoadingHistory(true);
     setErrorHistory(null);
     try {
+      const offset = (page - 1) * ITEMS_PER_PAGE;
       const response: SignatureHistoryApiResponse = await api.getSignatureHistory(ITEMS_PER_PAGE, offset, search);
       
       // Check if the response has the expected structure
