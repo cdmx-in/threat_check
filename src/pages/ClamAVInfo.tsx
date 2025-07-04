@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { api, SignatureInfoResponse, SignatureUpdateHistoryEntry, SignatureUpdateResponse } from "@/services/api";
-import { format } from "date-fns";
+import { format }date-fns";
 import { toast } from "sonner";
 import { Loader2, RefreshCw } from "lucide-react";
 import {
@@ -60,8 +60,7 @@ const ClamAVInfo: React.FC = () => {
     setLoadingHistory(true);
     setErrorHistory(null);
     try {
-      // The API response for history is not directly typed as SignatureHistoryResponse
-      // It returns { updates: SignatureUpdateHistoryEntry[], pagination: { total: number, ... } }
+      const offset = (page - 1) * ITEMS_PER_PAGE; // Define offset here
       const response: { updates: SignatureUpdateHistoryEntry[], pagination: { total: number, page: number, limit: number, pages: number } } = await api.getSignatureHistory(ITEMS_PER_PAGE, offset, search);
       
       if (response) { // Check if response itself is valid
