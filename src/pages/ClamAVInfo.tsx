@@ -25,7 +25,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { toast } from "sonner"; // Corrected import
+import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils"; // Import cn utility
 import {
@@ -92,6 +92,13 @@ const ClamAVInfo: React.FC = () => {
         setSignatureHistory(response.data.updates);
         setTotalHistoryCount(response.data.pagination.total);
         setErrorHistory(null);
+        console.log("Update History Pagination Data:", {
+          currentPage: page,
+          itemsPerPage: ITEMS_PER_PAGE,
+          totalItems: response.data.pagination.total,
+          totalPages: Math.ceil(response.data.pagination.total / ITEMS_PER_PAGE),
+          fetchedItemsCount: response.data.updates.length,
+        });
       } else {
         console.warn("API response for signature history was malformed. Received:", response);
         setErrorHistory("Invalid data format received for signature history. Expected an object with 'data.updates' (array) and 'data.pagination.total' properties.");
