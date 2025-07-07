@@ -6,9 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { api, ScanLogEntry } from "@/services/api"; // Import the new API service
+import { api, ScanLogEntry } from "@/services/api";
 import { format } from "date-fns";
 import { ArrowLeft } from "lucide-react";
+import { cn } from "@/lib/utils"; // Import cn utility
 
 const ScanDetails: React.FC = () => {
   const { scanId } = useParams<{ scanId: string }>();
@@ -96,7 +97,12 @@ const ScanDetails: React.FC = () => {
             <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
               {scanDetails.filename}
             </h3>
-            <Badge variant={scanDetails.scan_result === "INFECTED" ? "destructive" : "default"}>
+            <Badge 
+              className={cn(
+                scanDetails.scan_result === "INFECTED" && "bg-red-600 text-white hover:bg-red-700",
+                scanDetails.scan_result === "CLEAN" && "bg-green-600 text-white hover:bg-green-700"
+              )}
+            >
               {scanDetails.scan_result}
             </Badge>
           </div>

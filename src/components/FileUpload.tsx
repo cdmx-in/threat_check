@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { UploadCloud, XCircle, CheckCircle2 } from "lucide-react";
+import { UploadCloud, XCircle, CheckCircle2, Loader2 } from "lucide-react"; // Added Loader2
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { api, SingleScanResponse } from "@/services/api"; // Import the new API service
+import { api, SingleScanResponse } from "@/services/api";
+import { Badge } from "@/components/ui/badge"; // Import Badge
 
 // Max file size from the new API spec is 100MB
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
@@ -169,24 +170,30 @@ const FileUpload: React.FC = () => {
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-medium text-gray-800 dark:text-gray-200">{result.filename}</span>
                   {result.status === "clean" && (
-                    <span className="flex items-center text-green-600">
-                      <CheckCircle2 className="h-4 w-4 mr-1" /> Clean
-                    </span>
+                    <Badge className="bg-green-600 text-white hover:bg-green-700">
+                      <CheckCircle2 className="h-3 w-3 mr-1" /> Clean
+                    </Badge>
                   )}
                   {result.status === "infected" && (
-                    <span className="flex items-center text-red-600">
-                      <XCircle className="h-4 w-4 mr-1" /> Infected: {result.virus_name || "Unknown"}
-                    </span>
+                    <Badge variant="destructive">
+                      <XCircle className="h-3 w-3 mr-1" /> Infected: {result.virus_name || "Unknown"}
+                    </Badge>
                   )}
                   {result.status === "error" && (
-                    <span className="flex items-center text-yellow-600">
-                      <XCircle className="h-4 w-4 mr-1" /> Error
-                    </span>
+                    <Badge className="bg-yellow-500 text-white hover:bg-yellow-600">
+                      <XCircle className="h-3 w-3 mr-1" /> Error
+                    </Badge>
                   )}
                   {(result.status === "pending" || result.status === "uploading" || result.status === "scanning") && (
-                    <span className="text-gray-500">
-                      {result.status === "pending" ? "Ready to scan" : result.status === "uploading" ? "Uploading..." : "Scanning..."}
-                    </span>
+                    <Badge variant="secondary" className="flex items-center">
+                      {result.status === "pending" ? (
+                        <>Ready to scan</>
+                      ) : result.status === "uploading" ? (
+                        <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Uploading...</>
+                      ) : (
+                        <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Scanning...</>
+                      )}
+                    </Badge>
                   )}
                 </div>
                 {(result.status === "pending" || result.status === "uploading" || result.status === "scanning") && (

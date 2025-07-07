@@ -14,9 +14,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { api, ScanLogEntry } from "@/services/api"; // Import the new API service
+import { api, ScanLogEntry } from "@/services/api";
 import { format } from "date-fns";
-import { Eye } from "lucide-react"; // Changed from Download, Trash2 to Eye
+import { Eye } from "lucide-react";
+import { cn } from "@/lib/utils"; // Import cn utility
 
 const ScanHistory: React.FC = () => {
   const [scanHistory, setScanHistory] = useState<ScanLogEntry[]>([]);
@@ -90,7 +91,12 @@ const ScanHistory: React.FC = () => {
                     </TableCell>
                     <TableCell>{format(new Date(scan.scan_time), 'yyyy-MM-dd HH:mm:ss zzz')}</TableCell>
                     <TableCell>
-                      <Badge variant={scan.scan_result === "INFECTED" ? "destructive" : "default"}>
+                      <Badge 
+                        className={cn(
+                          scan.scan_result === "INFECTED" && "bg-red-600 text-white hover:bg-red-700",
+                          scan.scan_result === "CLEAN" && "bg-green-600 text-white hover:bg-green-700"
+                        )}
+                      >
                         {scan.scan_result}
                       </Badge>
                     </TableCell>
