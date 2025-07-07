@@ -166,9 +166,9 @@ const ClamAVInfo: React.FC = () => {
                         </p>
                       </div>
                       <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Last Overall Update:</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Last Overall Update (IST):</p>
                         <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                          {format(new Date(currentSignatureInfo.data.lastUpdate), 'yyyy-MM-dd HH:mm:ss zzz')}
+                          {format(new Date(currentSignatureInfo.data.lastUpdate), 'yyyy-MM-dd HH:mm:ss')}
                         </p>
                       </div>
                       <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
