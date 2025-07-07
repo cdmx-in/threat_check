@@ -318,8 +318,8 @@ const ClamAVInfo: React.FC = () => {
                               <Badge 
                                 className={cn(
                                   entry.update_status === "SUCCESS" && "bg-green-600 text-white hover:bg-green-700",
-                                  entry.update_status === "FAILURE" && "bg-red-600 text-white hover:bg-red-700"
                                 )}
+                                variant={entry.update_status === "FAILURE" ? "destructive" : undefined}
                               >
                                 {entry.update_status}
                               </Badge>
