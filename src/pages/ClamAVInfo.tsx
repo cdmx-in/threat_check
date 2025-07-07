@@ -36,7 +36,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const ITEMS_PER_PAGE = 10; // Default items per page for both sections
+const DEFAULT_ITEMS_PER_PAGE = 10; // Default items per page for both sections
 
 const ClamAVInfo: React.FC = () => {
   const [currentSignatureInfo, setCurrentSignatureInfo] = useState<SignatureInfoResponse | null>(null);
@@ -51,10 +51,11 @@ const ClamAVInfo: React.FC = () => {
   // State for Update History tab
   const [historySearchTerm, setHistorySearchTerm] = useState("");
   const [currentPageHistory, setCurrentPageHistory] = useState(1);
+  const [historyItemsPerPage, setHistoryItemsPerPage] = useState(DEFAULT_ITEMS_PER_PAGE); // New state for history items per page
 
   // State for Recent Signatures tab
   const [signatureSearchTerm, setSignatureSearchTerm] = useState("");
-  const [signaturesPerPage, setSignaturesPerPage] = useState(ITEMS_PER_PAGE);
+  const [signaturesPerPage, setSignaturesPerPage] = useState(DEFAULT_ITEMS_PER_PAGE);
   const [currentPageSignatures, setCurrentPageSignatures] = useState(1);
 
   const fetchSignatureInfo = useCallback(async () => {
@@ -81,12 +82,12 @@ const ClamAVInfo: React.FC = () => {
     }
   }, []);
 
-  const fetchSignatureHistory = useCallback(async (page: number, search: string) => {
+  const fetchSignatureHistory = useCallback(async (page: number, limit: number, search: string) => { // Added limit parameter
     setLoadingHistory(true);
     setErrorHistory(null);
     try {
-      const offset = (page - 1) * ITEMS_PER_PAGE;
-      const response: SignatureHistoryApiResponse = await api.getSignatureHistory(ITEMS_PER_PAGE, offset, search);
+      const offset = (page - 1) * limit; // Use the dynamic limit
+      const response: SignatureHistoryApiResponse = await api.getSignatureHistory(limit, offset, search); // Pass limit to API call
       
       if (response && response.data && Array.isArray(response.data.updates) && typeof response.data.pagination.total === 'number') {
         setSignatureHistory(response.data.updates);
@@ -94,9 +95,9 @@ const ClamAVInfo: React.FC = () => {
         setErrorHistory(null);
         console.log("Update History Pagination Data:", {
           currentPage: page,
-          itemsPerPage: ITEMS_PER_PAGE,
+          itemsPerPage: limit, // Log the actual limit used
           totalItems: response.data.pagination.total,
-          totalPages: Math.ceil(response.data.pagination.total / ITEMS_PER_PAGE),
+          totalPages: Math.ceil(response.data.pagination.total / limit), // Calculate total pages with dynamic limit
           fetchedItemsCount: response.data.updates.length,
         });
       } else {
@@ -119,8 +120,8 @@ const ClamAVInfo: React.FC = () => {
   }, [fetchSignatureInfo]);
 
   useEffect(() => {
-    fetchSignatureHistory(currentPageHistory, historySearchTerm);
-  }, [currentPageHistory, historySearchTerm, fetchSignatureHistory]);
+    fetchSignatureHistory(currentPageHistory, historyItemsPerPage, historySearchTerm); // Pass historyItemsPerPage
+  }, [currentPageHistory, historyItemsPerPage, historySearchTerm, fetchSignatureHistory]); // Add historyItemsPerPage to dependencies
 
   const handleUpdateSignatures = async () => {
     setUpdatingSignatures(true);
@@ -130,7 +131,7 @@ const ClamAVInfo: React.FC = () => {
       if (response.success) {
         toast.success("ClamAV signatures updated successfully!");
         fetchSignatureInfo();
-        fetchSignatureHistory(currentPageHistory, historySearchTerm);
+        fetchSignatureHistory(currentPageHistory, historyItemsPerPage, historySearchTerm); // Pass historyItemsPerPage
       } else {
         toast.error(`Signature update failed: ${response.message || "Unknown error"}`);
       }
@@ -148,7 +149,12 @@ const ClamAVInfo: React.FC = () => {
     setCurrentPageHistory(1); // Reset history page on search
   };
 
-  const totalPagesHistory = Math.ceil(totalHistoryCount / ITEMS_PER_PAGE);
+  const handleHistoryItemsPerPageChange = (value: string) => { // New handler for history items per page
+    setHistoryItemsPerPage(Number(value));
+    setCurrentPageHistory(1); // Reset to first page when items per page changes
+  };
+
+  const totalPagesHistory = Math.ceil(totalHistoryCount / historyItemsPerPage); // Use dynamic historyItemsPerPage
 
   // Logic for Recent Signatures pagination and search
   const allSignatures = currentSignatureInfo?.data?.signatures || [];
@@ -391,13 +397,27 @@ const ClamAVInfo: React.FC = () => {
                 <CardTitle className="text-2xl font-bold text-center">Signature Update History</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="mb-4">
+                <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
                   <Input
                     placeholder="Search history by database name or status..."
                     value={historySearchTerm}
                     onChange={handleHistorySearchChange}
-                    className="w-full"
+                    className="w-full sm:w-2/3"
                   />
+                  <div className="flex items-center space-x-2 w-full sm:w-1/3 justify-end">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Show:</span>
+                    <Select value={String(historyItemsPerPage)} onValueChange={handleHistoryItemsPerPageChange}>
+                      <SelectTrigger className="w-[100px]">
+                        <SelectValue placeholder="10" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="5">5</SelectItem>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="20">20</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 {loadingHistory ? (
                   <div className="text-center text-gray-600 dark:text-gray-400 flex items-center justify-center py-8">
@@ -442,32 +462,34 @@ const ClamAVInfo: React.FC = () => {
                         ))}
                       </TableBody>
                     </Table>
-                    <Pagination className="mt-4">
-                      <PaginationContent>
-                        <PaginationItem>
-                          <PaginationPrevious
-                            onClick={() => setCurrentPageHistory(prev => Math.max(1, prev - 1))}
-                            disabled={currentPageHistory === 1}
-                          />
-                        </PaginationItem>
-                        {[...Array(totalPagesHistory)].map((_, index) => (
-                          <PaginationItem key={index}>
-                            <PaginationLink
-                              isActive={currentPageHistory === index + 1}
-                              onClick={() => setCurrentPageHistory(index + 1)}
-                            >
-                              {index + 1}
-                            </PaginationLink>
+                    {totalPagesHistory > 1 && (
+                      <Pagination className="mt-4">
+                        <PaginationContent>
+                          <PaginationItem>
+                            <PaginationPrevious
+                              onClick={() => setCurrentPageHistory(prev => Math.max(1, prev - 1))}
+                              disabled={currentPageHistory === 1}
+                            />
                           </PaginationItem>
-                        ))}
-                        <PaginationItem>
-                          <PaginationNext
-                            onClick={() => setCurrentPageHistory(prev => Math.min(totalPagesHistory, prev + 1))}
-                            disabled={currentPageHistory === totalPagesHistory}
-                          />
-                        </PaginationItem>
-                      </PaginationContent>
-                    </Pagination>
+                          {[...Array(totalPagesHistory)].map((_, index) => (
+                            <PaginationItem key={index}>
+                              <PaginationLink
+                                isActive={currentPageHistory === index + 1}
+                                onClick={() => setCurrentPageHistory(index + 1)}
+                              >
+                                {index + 1}
+                              </PaginationLink>
+                            </PaginationItem>
+                          ))}
+                          <PaginationItem>
+                            <PaginationNext
+                              onClick={() => setCurrentPageHistory(prev => Math.min(totalPagesHistory, prev + 1))}
+                              disabled={currentPageHistory === totalPagesHistory}
+                            />
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    )}
                   </>
                 )}
               </CardContent>
