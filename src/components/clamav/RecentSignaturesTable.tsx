@@ -49,6 +49,18 @@ interface RecentSignaturesTableProps {
 
 // Helper function to get timezone abbreviation
 const getTimeZoneAbbreviation = (date: Date, timeZone: string) => {
+  // Custom mapping for common time zones that might not return desired short names
+  const customAbbreviations: { [key: string]: string } = {
+    "Asia/Calcutta": "IST", // Indian Standard Time
+    "America/New_York": "EST", // Eastern Standard Time
+    "America/Los_Angeles": "PST", // Pacific Standard Time
+    // Add more as needed
+  };
+
+  if (customAbbreviations[timeZone]) {
+    return customAbbreviations[timeZone];
+  }
+
   try {
     const formatter = new Intl.DateTimeFormat('en-US', {
       timeZone: timeZone,
