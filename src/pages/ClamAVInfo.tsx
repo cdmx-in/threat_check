@@ -82,12 +82,13 @@ const ClamAVInfo: React.FC = () => {
     }
   }, []);
 
-  const fetchSignatureHistory = useCallback(async (page: number, limit: number, search: string) => { // Added limit parameter
+  const fetchSignatureHistory = useCallback(async (page: number, limit: number, search: string) => {
     setLoadingHistory(true);
     setErrorHistory(null);
     try {
-      const offset = (page - 1) * limit; // Use the dynamic limit
-      const response: SignatureHistoryApiResponse = await api.getSignatureHistory(limit, offset, search); // Pass limit to API call
+      // Calculate offset from page and limit
+      const offset = (page - 1) * limit; 
+      const response: SignatureHistoryApiResponse = await api.getSignatureHistory(limit, offset, search);
       
       if (response && response.data && Array.isArray(response.data.updates) && typeof response.data.pagination.total === 'number') {
         setSignatureHistory(response.data.updates);
@@ -95,9 +96,10 @@ const ClamAVInfo: React.FC = () => {
         setErrorHistory(null);
         console.log("Update History Pagination Data:", {
           currentPage: page,
-          itemsPerPage: limit, // Log the actual limit used
+          itemsPerPage: limit,
+          offsetSent: offset, // Log the offset being sent
           totalItems: response.data.pagination.total,
-          totalPages: Math.ceil(response.data.pagination.total / limit), // Calculate total pages with dynamic limit
+          totalPages: Math.ceil(response.data.pagination.total / limit),
           fetchedItemsCount: response.data.updates.length,
         });
       } else {
@@ -120,8 +122,8 @@ const ClamAVInfo: React.FC = () => {
   }, [fetchSignatureInfo]);
 
   useEffect(() => {
-    fetchSignatureHistory(currentPageHistory, historyItemsPerPage, historySearchTerm); // Pass historyItemsPerPage
-  }, [currentPageHistory, historyItemsPerPage, historySearchTerm, fetchSignatureHistory]); // Add historyItemsPerPage to dependencies
+    fetchSignatureHistory(currentPageHistory, historyItemsPerPage, historySearchTerm);
+  }, [currentPageHistory, historyItemsPerPage, historySearchTerm, fetchSignatureHistory]);
 
   const handleUpdateSignatures = async () => {
     setUpdatingSignatures(true);
@@ -131,7 +133,7 @@ const ClamAVInfo: React.FC = () => {
       if (response.success) {
         toast.success("ClamAV signatures updated successfully!");
         fetchSignatureInfo();
-        fetchSignatureHistory(currentPageHistory, historyItemsPerPage, historySearchTerm); // Pass historyItemsPerPage
+        fetchSignatureHistory(currentPageHistory, historyItemsPerPage, historySearchTerm);
       } else {
         toast.error(`Signature update failed: ${response.message || "Unknown error"}`);
       }
@@ -149,12 +151,12 @@ const ClamAVInfo: React.FC = () => {
     setCurrentPageHistory(1); // Reset history page on search
   };
 
-  const handleHistoryItemsPerPageChange = (value: string) => { // New handler for history items per page
+  const handleHistoryItemsPerPageChange = (value: string) => {
     setHistoryItemsPerPage(Number(value));
     setCurrentPageHistory(1); // Reset to first page when items per page changes
   };
 
-  const totalPagesHistory = Math.ceil(totalHistoryCount / historyItemsPerPage); // Use dynamic historyItemsPerPage
+  const totalPagesHistory = Math.ceil(totalHistoryCount / historyItemsPerPage);
 
   // Logic for Recent Signatures pagination and search
   const allSignatures = currentSignatureInfo?.data?.signatures || [];
