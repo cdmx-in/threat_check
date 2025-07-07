@@ -25,8 +25,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { toast } from "sonner";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast }mport { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils"; // Import cn utility
 import {
   Select,
@@ -424,7 +423,7 @@ const ClamAVInfo: React.FC = () => {
                               <Badge 
                                 className={cn(
                                   entry.update_status.toUpperCase() === "SUCCESS" && "bg-green-600 text-white hover:bg-green-700",
-                                  entry.update_status.toUpperCase() === "FAILURE" && "bg-red-600 text-white hover:bg-red-700"
+                                  entry.update_status.toUpperCase().includes("FAIL") && "bg-red-600 text-white hover:bg-red-700"
                                 )}
                               >
                                 {entry.update_status}
