@@ -41,7 +41,8 @@ const ClamAVInfo: React.FC = () => {
   const [errorCurrentInfo, setErrorCurrentInfo] = useState<string | null>(null);
   const [errorHistory, setErrorHistory] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPageHistory, setCurrentPageHistory] = useState(1); // Renamed for clarity
+  const [currentPageSignatures, setCurrentPageSignatures] = useState(1); // New state for recent signatures pagination
 
   const fetchSignatureInfo = useCallback(async () => {
     setLoadingCurrentInfo(true);
@@ -98,8 +99,8 @@ const ClamAVInfo: React.FC = () => {
   }, [fetchSignatureInfo]);
 
   useEffect(() => {
-    fetchSignatureHistory(currentPage, searchTerm);
-  }, [currentPage, searchTerm, fetchSignatureHistory]);
+    fetchSignatureHistory(currentPageHistory, searchTerm);
+  }, [currentPageHistory, searchTerm, fetchSignatureHistory]);
 
   const handleUpdateSignatures = async () => {
     setUpdatingSignatures(true);
@@ -109,7 +110,7 @@ const ClamAVInfo: React.FC = () => {
       if (response.success) {
         toast.success("ClamAV signatures updated successfully!");
         fetchSignatureInfo();
-        fetchSignatureHistory(currentPage, searchTerm);
+        fetchSignatureHistory(currentPageHistory, searchTerm);
       } else {
         toast.error(`Signature update failed: ${response.message || "Unknown error"}`);
       }
@@ -123,10 +124,17 @@ const ClamAVInfo: React.FC = () => {
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
-    setCurrentPage(1);
+    setCurrentPageHistory(1); // Reset history page on search
   };
 
-  const totalPages = Math.ceil(totalHistoryCount / ITEMS_PER_PAGE);
+  const totalPagesHistory = Math.ceil(totalHistoryCount / ITEMS_PER_PAGE);
+
+  // Logic for Recent Signatures pagination
+  const signatures = currentSignatureInfo?.data?.signatures || [];
+  const totalSignaturePages = Math.ceil(signatures.length / ITEMS_PER_PAGE);
+  const indexOfLastSignature = currentPageSignatures * ITEMS_PER_PAGE;
+  const indexOfFirstSignature = indexOfLastSignature - ITEMS_PER_PAGE;
+  const currentSignatures = signatures.slice(indexOfFirstSignature, indexOfLastSignature);
 
   return (
     <div className="min-h-screen flex flex-col items-center bg-gray-100 dark:bg-gray-950 p-4">
@@ -232,41 +240,71 @@ const ClamAVInfo: React.FC = () => {
                   </div>
                 ) : errorCurrentInfo ? (
                   <p className="text-lg text-red-600 dark:text-red-400 text-center py-8">{errorCurrentInfo}</p>
-                ) : currentSignatureInfo && currentSignatureInfo.data.signatures && currentSignatureInfo.data.signatures.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Database</TableHead>
-                        <TableHead>Date Added</TableHead>
-                        <TableHead>Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {currentSignatureInfo.data.signatures.map((signature, index) => (
-                        <TableRow key={index}>
-                          <TableCell className="font-medium">{signature.name}</TableCell>
-                          <TableCell>{signature.type}</TableCell>
-                          <TableCell>{signature.database}</TableCell>
-                          <TableCell>{format(new Date(signature.dateAdded), 'yyyy-MM-dd HH:mm:ss zzz')}</TableCell>
-                          <TableCell>
-                            <Badge 
-                              className={cn(
-                                (signature.status.toUpperCase() === "ACTIVE" || signature.status.toUpperCase() === "SUCCESS") && "bg-green-600 text-white hover:bg-green-700",
-                                signature.status.toUpperCase() === "FAILURE" && "bg-red-600 text-white hover:bg-red-700",
-                                signature.status.toUpperCase() === "WARNING" && "bg-yellow-500 text-white hover:bg-yellow-600",
-                                signature.status.toUpperCase() === "INFO" && "bg-blue-600 text-white hover:bg-blue-700",
-                                !["ACTIVE", "SUCCESS", "FAILURE", "WARNING", "INFO"].includes(signature.status.toUpperCase()) && "bg-gray-500 text-white hover:bg-gray-600"
-                              )}
-                            >
-                              {signature.status}
-                            </Badge>
-                          </TableCell>
+                ) : signatures.length > 0 ? (
+                  <>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Database</TableHead>
+                          <TableHead>Date Added</TableHead>
+                          <TableHead>Status</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {currentSignatures.map((signature, index) => (
+                          <TableRow key={index}>
+                            <TableCell className="font-medium">{signature.name}</TableCell>
+                            <TableCell>{signature.type}</TableCell>
+                            <TableCell>{signature.database}</TableCell>
+                            <TableCell>{format(new Date(signature.dateAdded), 'yyyy-MM-dd HH:mm:ss zzz')}</TableCell>
+                            <TableCell>
+                              <Badge 
+                                className={cn(
+                                  (signature.status.toUpperCase() === "ACTIVE" || signature.status.toUpperCase() === "SUCCESS") && "bg-green-600 text-white hover:bg-green-700",
+                                  signature.status.toUpperCase() === "FAILURE" && "bg-red-600 text-white hover:bg-red-700",
+                                  signature.status.toUpperCase() === "WARNING" && "bg-yellow-500 text-white hover:bg-yellow-600",
+                                  signature.status.toUpperCase() === "INFO" && "bg-blue-600 text-white hover:bg-blue-700",
+                                  !["ACTIVE", "SUCCESS", "FAILURE", "WARNING", "INFO"].includes(signature.status.toUpperCase()) && "bg-gray-500 text-white hover:bg-gray-600"
+                                )}
+                              >
+                                {signature.status}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                    {totalSignaturePages > 1 && (
+                      <Pagination className="mt-4">
+                        <PaginationContent>
+                          <PaginationItem>
+                            <PaginationPrevious
+                              onClick={() => setCurrentPageSignatures(prev => Math.max(1, prev - 1))}
+                              disabled={currentPageSignatures === 1}
+                            />
+                          </PaginationItem>
+                          {[...Array(totalSignaturePages)].map((_, index) => (
+                            <PaginationItem key={index}>
+                              <PaginationLink
+                                isActive={currentPageSignatures === index + 1}
+                                onClick={() => setCurrentPageSignatures(index + 1)}
+                              >
+                                {index + 1}
+                              </PaginationLink>
+                            </PaginationItem>
+                          ))}
+                          <PaginationItem>
+                            <PaginationNext
+                              onClick={() => setCurrentPageSignatures(prev => Math.min(totalSignaturePages, prev + 1))}
+                              disabled={currentPageSignatures === totalSignaturePages}
+                            />
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    )}
+                  </>
                 ) : (
                   <p className="text-center text-gray-500 dark:text-gray-400 py-8">No recent signatures found.</p>
                 )}
@@ -336,15 +374,15 @@ const ClamAVInfo: React.FC = () => {
                       <PaginationContent>
                         <PaginationItem>
                           <PaginationPrevious
-                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPageHistory(prev => Math.max(1, prev - 1))}
+                            disabled={currentPageHistory === 1}
                           />
                         </PaginationItem>
-                        {[...Array(totalPages)].map((_, index) => (
+                        {[...Array(totalPagesHistory)].map((_, index) => (
                           <PaginationItem key={index}>
                             <PaginationLink
-                              isActive={currentPage === index + 1}
-                              onClick={() => setCurrentPage(index + 1)}
+                              isActive={currentPageHistory === index + 1}
+                              onClick={() => setCurrentPageHistory(index + 1)}
                             >
                               {index + 1}
                             </PaginationLink>
@@ -352,8 +390,8 @@ const ClamAVInfo: React.FC = () => {
                         ))}
                         <PaginationItem>
                           <PaginationNext
-                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                            disabled={currentPage === totalPages}
+                            onClick={() => setCurrentPageHistory(prev => Math.min(totalPagesHistory, prev + 1))}
+                            disabled={currentPageHistory === totalPagesHistory}
                           />
                         </PaginationItem>
                       </PaginationContent>
