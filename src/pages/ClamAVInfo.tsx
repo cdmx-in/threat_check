@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { api, SignatureInfoResponse, SignatureUpdateHistoryEntry, SignatureUpdateResponse, SignatureHistoryResponse as SignatureHistoryApiResponse } from "@/services/api";
-import { format } from "date-fns";
+import { format }D MMM yyyy HH:mm:ss zzz" from "date-fns";
 import { Loader2, RefreshCw } from "lucide-react";
 import {
   Pagination,
@@ -26,7 +26,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { toast } from "sonner";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // Import Tabs components
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -131,8 +131,9 @@ const ClamAVInfo: React.FC = () => {
     <div className="min-h-screen flex flex-col items-center bg-gray-100 dark:bg-gray-950 p-4">
       <div className="w-full max-w-4xl mx-auto space-y-8 mt-8">
         <Tabs defaultValue="current-info" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="current-info">Current Signature Info</TabsTrigger>
+            <TabsTrigger value="recent-signatures">Recent Signatures</TabsTrigger>
             <TabsTrigger value="update-history">Update History</TabsTrigger>
           </TabsList>
 
@@ -214,40 +215,57 @@ const ClamAVInfo: React.FC = () => {
                     ) : (
                       <p className="text-center text-gray-500 dark:text-gray-400 mt-6">No individual database information available.</p>
                     )}
-
-                    {currentSignatureInfo.data.signatures && currentSignatureInfo.data.signatures.length > 0 && (
-                      <div className="mt-6">
-                        <h4 className="text-xl font-semibold mb-4">Recent Signatures</h4>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Name</TableHead>
-                              <TableHead>Type</TableHead>
-                              <TableHead>Database</TableHead>
-                              <TableHead>Date Added</TableHead>
-                              <TableHead>Status</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {currentSignatureInfo.data.signatures.map((sig, index) => (
-                              <TableRow key={index}>
-                                <TableCell className="font-medium">{sig.name}</TableCell>
-                                <TableCell>{sig.type}</TableCell>
-                                <TableCell>{sig.database}</TableCell>
-                                <TableCell>{format(new Date(sig.dateAdded), 'yyyy-MM-dd HH:mm:ss zzz')}</TableCell>
-                                <TableCell>
-                                  <Badge variant={sig.status === "active" ? "default" : "secondary"}>
-                                    {sig.status}
-                                  </Badge>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    )}
                   </>
                 ) : null}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="recent-signatures">
+            {/* Card for Recent Signatures */}
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-2xl font-bold text-center">Recent Signatures</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {loadingCurrentInfo ? ( // Re-using loading state from current info as it's part of the same API call
+                  <div className="text-center text-gray-600 dark:text-gray-400 flex items-center justify-center py-8">
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading recent signatures...
+                  </div>
+                ) : errorCurrentInfo ? (
+                  <p className="text-lg text-red-600 dark:text-red-400 text-center py-8">{errorCurrentInfo}</p>
+                ) : currentSignatureInfo?.data.signatures && currentSignatureInfo.data.signatures.length > 0 ? (
+                  <div className="mt-6">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Database</TableHead>
+                          <TableHead>Date Added</TableHead>
+                          <TableHead>Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {currentSignatureInfo.data.signatures.map((sig, index) => (
+                          <TableRow key={index}>
+                            <TableCell className="font-medium">{sig.name}</TableCell>
+                            <TableCell>{sig.type}</TableCell>
+                            <TableCell>{sig.database}</TableCell>
+                            <TableCell>{format(new Date(sig.dateAdded), 'yyyy-MM-dd HH:mm:ss zzz')}</TableCell>
+                            <TableCell>
+                              <Badge variant={sig.status === "active" ? "default" : "secondary"}>
+                                {sig.status}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <p className="text-center text-gray-500 dark:text-gray-400 mt-6">No recent signature information available.</p>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
