@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { api, SignatureInfoResponse, SignatureUpdateHistoryEntry, SignatureUpdateResponse, SignatureHistoryResponse as SignatureHistoryApiResponse } from "@/services/api";
-import { format } = "date-fns";
+import { format } from "date-fns";
 import { Loader2, RefreshCw } from "lucide-react";
 import {
   Pagination,
