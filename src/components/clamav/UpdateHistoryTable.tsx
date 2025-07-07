@@ -59,6 +59,8 @@ const UpdateHistoryTable: React.FC<UpdateHistoryTableProps> = ({
   setCurrentPageHistory,
   totalPagesHistory,
 }) => {
+  const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
   return (
     <Card className="shadow-lg">
       <CardHeader>
@@ -103,7 +105,7 @@ const UpdateHistoryTable: React.FC<UpdateHistoryTableProps> = ({
                   <TableHead>Database</TableHead>
                   <TableHead>Version</TableHead>
                   <TableHead>Signatures</TableHead>
-                  <TableHead>Last Updated</TableHead>
+                  <TableHead>Last Updated ({localTimeZone})</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Details</TableHead>
                 </TableRow>

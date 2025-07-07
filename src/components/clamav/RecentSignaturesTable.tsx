@@ -61,6 +61,8 @@ const RecentSignaturesTable: React.FC<RecentSignaturesTableProps> = ({
   currentSignatures,
   totalFilteredSignatures,
 }) => {
+  const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
   return (
     <Card className="shadow-lg">
       <CardHeader>
@@ -108,7 +110,7 @@ const RecentSignaturesTable: React.FC<RecentSignaturesTableProps> = ({
                       <TableHead>Name</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead>Database</TableHead>
-                      <TableHead>Date Added</TableHead>
+                      <TableHead>Date Added ({localTimeZone})</TableHead>
                       <TableHead>Status</TableHead>
                     </TableRow>
                   </TableHeader>

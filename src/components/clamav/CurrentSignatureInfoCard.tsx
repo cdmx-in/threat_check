@@ -23,6 +23,8 @@ const CurrentSignatureInfoCard: React.FC<CurrentSignatureInfoCardProps> = ({
   updatingSignatures,
   handleUpdateSignatures,
 }) => {
+  const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
   return (
     <Card className="shadow-lg">
       <CardHeader>
@@ -51,7 +53,7 @@ const CurrentSignatureInfoCard: React.FC<CurrentSignatureInfoCardProps> = ({
                 </p>
               </div>
               <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Last Overall Update:</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Last Overall Update ({localTimeZone}):</p>
                 <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
                   {format(new Date(currentSignatureInfo.data.lastUpdate), 'yyyy-MM-dd HH:mm:ss')}
                 </p>
@@ -83,7 +85,7 @@ const CurrentSignatureInfoCard: React.FC<CurrentSignatureInfoCardProps> = ({
                     <TableRow>
                       <TableHead>Name</TableHead>
                       <TableHead>Signatures</TableHead>
-                      <TableHead>Last Updated</TableHead>
+                      <TableHead>Last Updated ({localTimeZone})</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

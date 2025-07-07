@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { api, ScanLogEntry } from "@/services/api";
-import { format } from "date-fns";
+import { format } = "date-fns";
 import { Eye } from "lucide-react";
 import { cn } from "@/lib/utils"; // Import cn utility
 
@@ -23,6 +23,7 @@ const ScanHistory: React.FC = () => {
   const [scanHistory, setScanHistory] = useState<ScanLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   useEffect(() => {
     const fetchScanHistory = async () => {
@@ -76,7 +77,7 @@ const ScanHistory: React.FC = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Filename</TableHead>
-                  <TableHead>Scan Date</TableHead>
+                  <TableHead>Scan Date ({localTimeZone})</TableHead>
                   <TableHead>Result</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
