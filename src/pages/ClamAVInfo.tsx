@@ -28,8 +28,15 @@ import {
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils"; // Import cn utility
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 10; // Default items per page for both sections
 
 const ClamAVInfo: React.FC = () => {
   const [currentSignatureInfo, setCurrentSignatureInfo] = useState<SignatureInfoResponse | null>(null);
@@ -40,9 +47,15 @@ const ClamAVInfo: React.FC = () => {
   const [updatingSignatures, setUpdatingSignatures] = useState(false);
   const [errorCurrentInfo, setErrorCurrentInfo] = useState<string | null>(null);
   const [errorHistory, setErrorHistory] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [currentPageHistory, setCurrentPageHistory] = useState(1); // Renamed for clarity
-  const [currentPageSignatures, setCurrentPageSignatures] = useState(1); // New state for recent signatures pagination
+  
+  // State for Update History tab
+  const [historySearchTerm, setHistorySearchTerm] = useState("");
+  const [currentPageHistory, setCurrentPageHistory] = useState(1);
+
+  // State for Recent Signatures tab
+  const [signatureSearchTerm, setSignatureSearchTerm] = useState("");
+  const [signaturesPerPage, setSignaturesPerPage] = useState(ITEMS_PER_PAGE);
+  const [currentPageSignatures, setCurrentPageSignatures] = useState(1);
 
   const fetchSignatureInfo = useCallback(async () => {
     setLoadingCurrentInfo(true);
@@ -99,8 +112,8 @@ const ClamAVInfo: React.FC = () => {
   }, [fetchSignatureInfo]);
 
   useEffect(() => {
-    fetchSignatureHistory(currentPageHistory, searchTerm);
-  }, [currentPageHistory, searchTerm, fetchSignatureHistory]);
+    fetchSignatureHistory(currentPageHistory, historySearchTerm);
+  }, [currentPageHistory, historySearchTerm, fetchSignatureHistory]);
 
   const handleUpdateSignatures = async () => {
     setUpdatingSignatures(true);
@@ -110,7 +123,7 @@ const ClamAVInfo: React.FC = () => {
       if (response.success) {
         toast.success("ClamAV signatures updated successfully!");
         fetchSignatureInfo();
-        fetchSignatureHistory(currentPageHistory, searchTerm);
+        fetchSignatureHistory(currentPageHistory, historySearchTerm);
       } else {
         toast.error(`Signature update failed: ${response.message || "Unknown error"}`);
       }
@@ -122,19 +135,42 @@ const ClamAVInfo: React.FC = () => {
     }
   };
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
+  // Handlers for Update History tab
+  const handleHistorySearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setHistorySearchTerm(e.target.value);
     setCurrentPageHistory(1); // Reset history page on search
   };
 
   const totalPagesHistory = Math.ceil(totalHistoryCount / ITEMS_PER_PAGE);
 
-  // Logic for Recent Signatures pagination
-  const signatures = currentSignatureInfo?.data?.signatures || [];
-  const totalSignaturePages = Math.ceil(signatures.length / ITEMS_PER_PAGE);
-  const indexOfLastSignature = currentPageSignatures * ITEMS_PER_PAGE;
-  const indexOfFirstSignature = indexOfLastSignature - ITEMS_PER_PAGE;
-  const currentSignatures = signatures.slice(indexOfFirstSignature, indexOfLastSignature);
+  // Logic for Recent Signatures pagination and search
+  const allSignatures = currentSignatureInfo?.data?.signatures || [];
+  const filteredSignatures = allSignatures.filter(signature => {
+    const lowerCaseSearchTerm = signatureSearchTerm.toLowerCase();
+    return (
+      signature.name.toLowerCase().includes(lowerCaseSearchTerm) ||
+      signature.type.toLowerCase().includes(lowerCaseSearchTerm) ||
+      signature.database.toLowerCase().includes(lowerCaseSearchTerm) ||
+      signature.status.toLowerCase().includes(lowerCaseSearchTerm)
+    );
+  });
+
+  const totalFilteredSignatures = filteredSignatures.length;
+  const totalSignaturePages = Math.ceil(totalFilteredSignatures / signaturesPerPage);
+  const indexOfLastSignature = currentPageSignatures * signaturesPerPage;
+  const indexOfFirstSignature = indexOfLastSignature - signaturesPerPage;
+  const currentSignatures = filteredSignatures.slice(indexOfFirstSignature, indexOfLastSignature);
+
+  // Handlers for Recent Signatures tab
+  const handleSignaturesPerPageChange = (value: string) => {
+    setSignaturesPerPage(Number(value));
+    setCurrentPageSignatures(1); // Reset to first page when items per page changes
+  };
+
+  const handleSignatureSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSignatureSearchTerm(e.target.value);
+    setCurrentPageSignatures(1); // Reset to first page when search term changes
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center bg-gray-100 dark:bg-gray-950 p-4">
@@ -240,69 +276,98 @@ const ClamAVInfo: React.FC = () => {
                   </div>
                 ) : errorCurrentInfo ? (
                   <p className="text-lg text-red-600 dark:text-red-400 text-center py-8">{errorCurrentInfo}</p>
-                ) : signatures.length > 0 ? (
+                ) : allSignatures.length > 0 ? (
                   <>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Database</TableHead>
-                          <TableHead>Date Added</TableHead>
-                          <TableHead>Status</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {currentSignatures.map((signature, index) => (
-                          <TableRow key={index}>
-                            <TableCell className="font-medium">{signature.name}</TableCell>
-                            <TableCell>{signature.type}</TableCell>
-                            <TableCell>{signature.database}</TableCell>
-                            <TableCell>{format(new Date(signature.dateAdded), 'yyyy-MM-dd HH:mm:ss zzz')}</TableCell>
-                            <TableCell>
-                              <Badge 
-                                className={cn(
-                                  (signature.status.toUpperCase() === "ACTIVE" || signature.status.toUpperCase() === "SUCCESS") && "bg-green-600 text-white hover:bg-green-700",
-                                  signature.status.toUpperCase() === "FAILURE" && "bg-red-600 text-white hover:bg-red-700",
-                                  signature.status.toUpperCase() === "WARNING" && "bg-yellow-500 text-white hover:bg-yellow-600",
-                                  signature.status.toUpperCase() === "INFO" && "bg-blue-600 text-white hover:bg-blue-700",
-                                  !["ACTIVE", "SUCCESS", "FAILURE", "WARNING", "INFO"].includes(signature.status.toUpperCase()) && "bg-gray-500 text-white hover:bg-gray-600"
-                                )}
-                              >
-                                {signature.status}
-                              </Badge>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                    {totalSignaturePages > 1 && (
-                      <Pagination className="mt-4">
-                        <PaginationContent>
-                          <PaginationItem>
-                            <PaginationPrevious
-                              onClick={() => setCurrentPageSignatures(prev => Math.max(1, prev - 1))}
-                              disabled={currentPageSignatures === 1}
-                            />
-                          </PaginationItem>
-                          {[...Array(totalSignaturePages)].map((_, index) => (
-                            <PaginationItem key={index}>
-                              <PaginationLink
-                                isActive={currentPageSignatures === index + 1}
-                                onClick={() => setCurrentPageSignatures(index + 1)}
-                              >
-                                {index + 1}
-                              </PaginationLink>
-                            </PaginationItem>
-                          ))}
-                          <PaginationItem>
-                            <PaginationNext
-                              onClick={() => setCurrentPageSignatures(prev => Math.min(totalSignaturePages, prev + 1))}
-                              disabled={currentPageSignatures === totalSignaturePages}
-                            />
-                          </PaginationItem>
-                        </PaginationContent>
-                      </Pagination>
+                    <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
+                      <Input
+                        placeholder="Search signatures..."
+                        value={signatureSearchTerm}
+                        onChange={handleSignatureSearchChange}
+                        className="w-full sm:w-2/3"
+                      />
+                      <div className="flex items-center space-x-2 w-full sm:w-1/3 justify-end">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Show:</span>
+                        <Select value={String(signaturesPerPage)} onValueChange={handleSignaturesPerPageChange}>
+                          <SelectTrigger className="w-[100px]">
+                            <SelectValue placeholder="10" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="5">5</SelectItem>
+                            <SelectItem value="10">10</SelectItem>
+                            <SelectItem value="20">20</SelectItem>
+                            <SelectItem value="50">50</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {filteredSignatures.length === 0 ? (
+                      <p className="text-center text-gray-500 dark:text-gray-400 py-8">No signatures found matching your search.</p>
+                    ) : (
+                      <>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Name</TableHead>
+                              <TableHead>Type</TableHead>
+                              <TableHead>Database</TableHead>
+                              <TableHead>Date Added</TableHead>
+                              <TableHead>Status</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {currentSignatures.map((signature, index) => (
+                              <TableRow key={index}>
+                                <TableCell className="font-medium">{signature.name}</TableCell>
+                                <TableCell>{signature.type}</TableCell>
+                                <TableCell>{signature.database}</TableCell>
+                                <TableCell>{format(new Date(signature.dateAdded), 'yyyy-MM-dd HH:mm:ss zzz')}</TableCell>
+                                <TableCell>
+                                  <Badge 
+                                    className={cn(
+                                      (signature.status.toUpperCase() === "ACTIVE" || signature.status.toUpperCase() === "SUCCESS") && "bg-green-600 text-white hover:bg-green-700",
+                                      signature.status.toUpperCase() === "FAILURE" && "bg-red-600 text-white hover:bg-red-700",
+                                      signature.status.toUpperCase() === "WARNING" && "bg-yellow-500 text-white hover:bg-yellow-600",
+                                      signature.status.toUpperCase() === "INFO" && "bg-blue-600 text-white hover:bg-blue-700",
+                                      !["ACTIVE", "SUCCESS", "FAILURE", "WARNING", "INFO"].includes(signature.status.toUpperCase()) && "bg-gray-500 text-white hover:bg-gray-600"
+                                    )}
+                                  >
+                                    {signature.status}
+                                  </Badge>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                        {totalSignaturePages > 1 && (
+                          <Pagination className="mt-4">
+                            <PaginationContent>
+                              <PaginationItem>
+                                <PaginationPrevious
+                                  onClick={() => setCurrentPageSignatures(prev => Math.max(1, prev - 1))}
+                                  disabled={currentPageSignatures === 1}
+                                />
+                              </PaginationItem>
+                              {[...Array(totalSignaturePages)].map((_, index) => (
+                                <PaginationItem key={index}>
+                                  <PaginationLink
+                                    isActive={currentPageSignatures === index + 1}
+                                    onClick={() => setCurrentPageSignatures(index + 1)}
+                                  >
+                                    {index + 1}
+                                  </PaginationLink>
+                                </PaginationItem>
+                              ))}
+                              <PaginationItem>
+                                <PaginationNext
+                                  onClick={() => setCurrentPageSignatures(prev => Math.min(totalSignaturePages, prev + 1))}
+                                  disabled={currentPageSignatures === totalSignaturePages}
+                                />
+                              </PaginationItem>
+                            </PaginationContent>
+                          </Pagination>
+                        )}
+                      </>
                     )}
                   </>
                 ) : (
@@ -322,8 +387,8 @@ const ClamAVInfo: React.FC = () => {
                 <div className="mb-4">
                   <Input
                     placeholder="Search history by database name or status..."
-                    value={searchTerm}
-                    onChange={handleSearchChange}
+                    value={historySearchTerm}
+                    onChange={handleHistorySearchChange}
                     className="w-full"
                   />
                 </div>
