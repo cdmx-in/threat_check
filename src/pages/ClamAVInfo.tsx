@@ -131,8 +131,9 @@ const ClamAVInfo: React.FC = () => {
     <div className="min-h-screen flex flex-col items-center bg-gray-100 dark:bg-gray-950 p-4">
       <div className="w-full max-w-4xl mx-auto space-y-8 mt-8">
         <Tabs defaultValue="current-info" className="w-full">
-          <TabsList className="grid w-full grid-cols-2"> {/* Changed to grid-cols-2 */}
+          <TabsList className="grid w-full grid-cols-3"> {/* Changed to grid-cols-3 */}
             <TabsTrigger value="current-info">Current Signature Info</TabsTrigger>
+            <TabsTrigger value="recent-signatures">Recent Signatures</TabsTrigger> {/* Re-added tab */}
             <TabsTrigger value="update-history">Update History</TabsTrigger>
           </TabsList>
 
@@ -214,6 +215,52 @@ const ClamAVInfo: React.FC = () => {
                     )}
                   </>
                 ) : null}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="recent-signatures"> {/* Re-added content */}
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-2xl font-bold text-center">Recent Signatures</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {loadingCurrentInfo ? (
+                  <div className="text-center text-gray-600 dark:text-gray-400 flex items-center justify-center py-8">
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading recent signatures...
+                  </div>
+                ) : errorCurrentInfo ? (
+                  <p className="text-lg text-red-600 dark:text-red-400 text-center py-8">{errorCurrentInfo}</p>
+                ) : currentSignatureInfo && currentSignatureInfo.data.signatures && currentSignatureInfo.data.signatures.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Database</TableHead>
+                        <TableHead>Date Added</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {currentSignatureInfo.data.signatures.map((signature, index) => (
+                        <TableRow key={index}>
+                          <TableCell className="font-medium">{signature.name}</TableCell>
+                          <TableCell>{signature.type}</TableCell>
+                          <TableCell>{signature.database}</TableCell>
+                          <TableCell>{format(new Date(signature.dateAdded), 'yyyy-MM-dd HH:mm:ss zzz')}</TableCell>
+                          <TableCell>
+                            <Badge variant={signature.status === "ACTIVE" ? "default" : "secondary"}>
+                              {signature.status}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <p className="text-center text-gray-500 dark:text-gray-400 py-8">No recent signatures found.</p>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
