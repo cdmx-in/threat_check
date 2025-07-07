@@ -168,6 +168,15 @@ export const api = {
     return response.json();
   },
 
+  getSignatureInfo: async (): Promise<SignatureInfoResponse> => {
+    const response = await fetch(`${BASE_URL}/api/signatures/info`);
+    if (!response.ok) {
+      const errorData: ErrorResponse = await response.json();
+      throw new Error(errorData.message || errorData.error || "Failed to fetch signature information");
+    }
+    return response.json();
+  },
+
   // Updated API function for ClamAV signature history to use 'page' instead of 'offset'
   getSignatureHistory: async (
     limit: number = 10,
