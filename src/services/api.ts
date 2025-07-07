@@ -107,7 +107,7 @@ interface SignatureHistoryResponse {
     pagination: {
       total: number;
       limit: number;
-      offset: number;
+      offset: number; // Keep offset here as it's what the API *returns*
     };
   };
 }
@@ -168,27 +168,18 @@ export const api = {
     return response.json();
   },
 
-  // New API functions for ClamAV signature management
-  getSignatureInfo: async (): Promise<SignatureInfoResponse> => {
-    const response = await fetch(`${BASE_URL}/api/signatures/info`);
-    if (!response.ok) {
-      const errorData: ErrorResponse = await response.json();
-      throw new Error(errorData.message || errorData.error || "Failed to fetch signature information");
-    }
-    return response.json();
-  },
-
+  // Updated API function for ClamAV signature history to use 'page' instead of 'offset'
   getSignatureHistory: async (
     limit: number = 10,
-    offset: number = 0,
+    page: number = 1, // Changed from offset to page
     search: string = ""
   ): Promise<SignatureHistoryResponse> => {
     const response = await fetch(
-      `${BASE_URL}/api/signatures/history?limit=${limit}&offset=${offset}&search=${encodeURIComponent(search)}`
+      `${BASE_URL}/api/signatures/history?limit=${limit}&page=${page}&search=${encodeURIComponent(search)}` // Changed parameter name in URL
     );
     if (!response.ok) {
       const errorData: ErrorResponse = await response.json();
-      throw new Error(errorData.message || errorData.error || "Failed to fetch signature history");
+      throw new Error(errorData.message || errorData.error || "Failed to fetch signature information");
     }
     return response.json();
   },

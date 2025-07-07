@@ -59,8 +59,8 @@ const ClamAVInfo: React.FC = () => {
     setLoadingHistory(true);
     setErrorHistory(null);
     try {
-      const offset = (page - 1) * limit; 
-      const response: SignatureHistoryApiResponse = await api.getSignatureHistory(limit, offset, search);
+      // Pass page directly, no offset calculation needed here
+      const response: SignatureHistoryApiResponse = await api.getSignatureHistory(limit, page, search);
       
       if (response && response.data && Array.isArray(response.data.updates) && typeof response.data.pagination.total === 'number') {
         setSignatureHistory(response.data.updates);
@@ -69,7 +69,6 @@ const ClamAVInfo: React.FC = () => {
         console.log("Update History Pagination Data:", {
           currentPage: page,
           itemsPerPage: limit,
-          offsetSent: offset,
           totalItems: response.data.pagination.total,
           totalPages: Math.ceil(response.data.pagination.total / limit),
           fetchedItemsCount: response.data.updates.length,
