@@ -205,7 +205,6 @@ const ClamAVInfo: React.FC = () => {
                             {currentSignatureInfo.data.databases.map((db, index) => (
                               <TableRow key={index}>
                                 <TableCell className="font-medium">{db.name}</TableCell>
-                                <TableCell>{db.signatures.toLocaleString()}</TableCell>
                                 <TableCell>{format(new Date(db.lastUpdate), 'yyyy-MM-dd HH:mm:ss zzz')}</TableCell>
                               </TableRow>
                             ))}
