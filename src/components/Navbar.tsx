@@ -13,18 +13,18 @@ const Navbar: React.FC = () => {
           Malware Scanner
         </Link>
         <div className="space-x-4 flex items-center">
-          <Button asChild variant="ghost" className="text-primary-foreground hover:bg-primary/80">
+          <Button asChild variant="ghost" className="text-primary-foreground hover:bg-primary-foreground/10">
             <Link to="/">
               <Home className="mr-2 h-4 w-4" /> Home
             </Link>
           </Button>
-          <Button asChild variant="ghost" className="text-primary-foreground hover:bg-primary/80">
+          <Button asChild variant="ghost" className="text-primary-foreground hover:bg-primary-foreground/10">
             <Link to="/history">
               <History className="mr-2 h-4 w-4" /> Scan History
             </Link>
           </Button>
-          <Button asChild variant="ghost" className="text-primary-foreground hover:bg-primary/80">
-            <Link to="/clamav-info"> {/* Updated link path and text */}
+          <Button asChild variant="ghost" className="text-primary-foreground hover:bg-primary-foreground/10">
+            <Link to="/clamav-info">
               <Settings className="mr-2 h-4 w-4" /> ClamAV Info
             </Link>
           </Button>
