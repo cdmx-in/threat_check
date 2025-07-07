@@ -253,8 +253,11 @@ const ClamAVInfo: React.FC = () => {
                           <TableCell>
                             <Badge 
                               className={cn(
-                                signature.status === "ACTIVE" && "bg-green-600 text-white hover:bg-green-700",
-                                signature.status !== "ACTIVE" && "bg-gray-500 text-white hover:bg-gray-600" // Neutral color for non-active
+                                (signature.status === "ACTIVE" || signature.status === "SUCCESS") && "bg-green-600 text-white hover:bg-green-700",
+                                signature.status === "FAILURE" && "bg-red-600 text-white hover:bg-red-700",
+                                signature.status === "WARNING" && "bg-yellow-500 text-white hover:bg-yellow-600",
+                                signature.status === "INFO" && "bg-blue-600 text-white hover:bg-blue-700",
+                                !["ACTIVE", "SUCCESS", "FAILURE", "WARNING", "INFO"].includes(signature.status) && "bg-gray-500 text-white hover:bg-gray-600"
                               )}
                             >
                               {signature.status}
