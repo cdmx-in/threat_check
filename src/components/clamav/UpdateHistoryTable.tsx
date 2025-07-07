@@ -103,7 +103,7 @@ const UpdateHistoryTable: React.FC<UpdateHistoryTableProps> = ({
                   <TableHead>Database</TableHead>
                   <TableHead>Version</TableHead>
                   <TableHead>Signatures</TableHead>
-                  <TableHead>Last Updated (UTC)</TableHead>
+                  <TableHead>Last Updated</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Details</TableHead>
                 </TableRow>
