@@ -23,8 +23,21 @@ const CurrentSignatureInfoCard: React.FC<CurrentSignatureInfoCardProps> = ({
   updatingSignatures,
   handleUpdateSignatures,
 }) => {
-  // Removed getLocalTimeZoneAbbreviation as we want to explicitly show UTC in header
-  const timezoneAbbreviation = " (UTC)"; // Explicitly set to UTC
+  // Function to get the local timezone abbreviation (e.g., IST, EST, EDT)
+  const getLocalTimeZoneAbbreviation = () => {
+    try {
+      const date = new Date();
+      const options: Intl.DateTimeFormatOptions = { timeZoneName: 'short' };
+      const parts = new Intl.DateTimeFormat('en-US', options).formatToParts(date);
+      const timeZonePart = parts.find(part => part.type === 'timeZoneName');
+      return timeZonePart ? ` (${timeZonePart.value})` : '';
+    } catch (e) {
+      console.error("Could not get timezone abbreviation:", e);
+      return '';
+    }
+  };
+
+  const timezoneAbbreviation = getLocalTimeZoneAbbreviation();
 
   return (
     <Card className="shadow-lg">
