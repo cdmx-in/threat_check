@@ -47,6 +47,22 @@ interface RecentSignaturesTableProps {
   totalFilteredSignatures: number;
 }
 
+// Helper function to get timezone abbreviation
+const getTimeZoneAbbreviation = (date: Date, timeZone: string) => {
+  try {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timeZone,
+      timeZoneName: 'short',
+    });
+    const parts = formatter.formatToParts(date);
+    const timeZonePart = parts.find(part => part.type === 'timeZoneName');
+    return timeZonePart ? timeZonePart.value : '';
+  } catch (e) {
+    console.error("Error getting timezone abbreviation:", e);
+    return '';
+  }
+};
+
 const RecentSignaturesTable: React.FC<RecentSignaturesTableProps> = ({
   allSignatures,
   loadingCurrentInfo,
@@ -110,7 +126,7 @@ const RecentSignaturesTable: React.FC<RecentSignaturesTableProps> = ({
                       <TableHead>Name</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead>Database</TableHead>
-                      <TableHead>Date Added ({localTimeZone})</TableHead>
+                      <TableHead>Date Added ({getTimeZoneAbbreviation(new Date(), localTimeZone)})</TableHead>
                       <TableHead>Status</TableHead>
                     </TableRow>
                   </TableHeader>

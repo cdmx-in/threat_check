@@ -46,6 +46,22 @@ interface UpdateHistoryTableProps {
   totalPagesHistory: number;
 }
 
+// Helper function to get timezone abbreviation
+const getTimeZoneAbbreviation = (date: Date, timeZone: string) => {
+  try {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timeZone,
+      timeZoneName: 'short',
+    });
+    const parts = formatter.formatToParts(date);
+    const timeZonePart = parts.find(part => part.type === 'timeZoneName');
+    return timeZonePart ? timeZonePart.value : '';
+  } catch (e) {
+    console.error("Error getting timezone abbreviation:", e);
+    return '';
+  }
+};
+
 const UpdateHistoryTable: React.FC<UpdateHistoryTableProps> = ({
   signatureHistory,
   totalHistoryCount,
@@ -105,7 +121,7 @@ const UpdateHistoryTable: React.FC<UpdateHistoryTableProps> = ({
                   <TableHead>Database</TableHead>
                   <TableHead>Version</TableHead>
                   <TableHead>Signatures</TableHead>
-                  <TableHead>Last Updated ({localTimeZone})</TableHead>
+                  <TableHead>Last Updated ({getTimeZoneAbbreviation(new Date(), localTimeZone)})</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Details</TableHead>
                 </TableRow>

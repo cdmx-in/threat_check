@@ -19,6 +19,22 @@ import { format } from "date-fns";
 import { Eye } from "lucide-react";
 import { cn } from "@/lib/utils"; // Import cn utility
 
+// Helper function to get timezone abbreviation
+const getTimeZoneAbbreviation = (date: Date, timeZone: string) => {
+  try {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timeZone,
+      timeZoneName: 'short',
+    });
+    const parts = formatter.formatToParts(date);
+    const timeZonePart = parts.find(part => part.type === 'timeZoneName');
+    return timeZonePart ? timeZonePart.value : '';
+  } catch (e) {
+    console.error("Error getting timezone abbreviation:", e);
+    return '';
+  }
+};
+
 const ScanHistory: React.FC = () => {
   const [scanHistory, setScanHistory] = useState<ScanLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,7 +93,7 @@ const ScanHistory: React.FC = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Filename</TableHead>
-                  <TableHead>Scan Date ({localTimeZone})</TableHead>
+                  <TableHead>Scan Date ({getTimeZoneAbbreviation(new Date(), localTimeZone)})</TableHead>
                   <TableHead>Result</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>

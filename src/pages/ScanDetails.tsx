@@ -11,6 +11,22 @@ import { format } from "date-fns";
 import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils"; // Import cn utility
 
+// Helper function to get timezone abbreviation
+const getTimeZoneAbbreviation = (date: Date, timeZone: string) => {
+  try {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timeZone,
+      timeZoneName: 'short',
+    });
+    const parts = formatter.formatToParts(date);
+    const timeZonePart = parts.find(part => part.type === 'timeZoneName');
+    return timeZonePart ? timeZonePart.value : '';
+  } catch (e) {
+    console.error("Error getting timezone abbreviation:", e);
+    return '';
+  }
+};
+
 const ScanDetails: React.FC = () => {
   const { scanId } = useParams<{ scanId: string }>();
   const [scanDetails, setScanDetails] = useState<ScanLogEntry | null>(null);
@@ -113,7 +129,7 @@ const ScanDetails: React.FC = () => {
               <p className="text-base font-medium text-gray-900 dark:text-gray-100">{scanDetails.id}</p>
             </div>
             <div className="p-3 border rounded-md bg-gray-50 dark:bg-gray-800">
-              <p className="text-sm text-gray-500 dark:text-gray-400">Scan Date ({localTimeZone}):</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Scan Date ({getTimeZoneAbbreviation(new Date(scanDetails.scan_time), localTimeZone)}):</p>
               <p className="text-base font-medium text-gray-900 dark:text-gray-100">
                 {format(new Date(scanDetails.scan_time), 'yyyy-MM-dd HH:mm:ss')}
               </p>

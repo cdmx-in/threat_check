@@ -16,6 +16,22 @@ interface CurrentSignatureInfoCardProps {
   handleUpdateSignatures: () => Promise<void>;
 }
 
+// Helper function to get timezone abbreviation
+const getTimeZoneAbbreviation = (date: Date, timeZone: string) => {
+  try {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timeZone,
+      timeZoneName: 'short',
+    });
+    const parts = formatter.formatToParts(date);
+    const timeZonePart = parts.find(part => part.type === 'timeZoneName');
+    return timeZonePart ? timeZonePart.value : '';
+  } catch (e) {
+    console.error("Error getting timezone abbreviation:", e);
+    return '';
+  }
+};
+
 const CurrentSignatureInfoCard: React.FC<CurrentSignatureInfoCardProps> = ({
   currentSignatureInfo,
   loadingCurrentInfo,
@@ -53,7 +69,7 @@ const CurrentSignatureInfoCard: React.FC<CurrentSignatureInfoCardProps> = ({
                 </p>
               </div>
               <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Last Overall Update ({localTimeZone}):</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Last Overall Update ({getTimeZoneAbbreviation(new Date(currentSignatureInfo.data.lastUpdate), localTimeZone)}):</p>
                 <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
                   {format(new Date(currentSignatureInfo.data.lastUpdate), 'yyyy-MM-dd HH:mm:ss')}
                 </p>
@@ -85,7 +101,7 @@ const CurrentSignatureInfoCard: React.FC<CurrentSignatureInfoCardProps> = ({
                     <TableRow>
                       <TableHead>Name</TableHead>
                       <TableHead>Signatures</TableHead>
-                      <TableHead>Last Updated ({localTimeZone})</TableHead>
+                      <TableHead>Last Updated ({getTimeZoneAbbreviation(new Date(currentSignatureInfo.data.databases[0].lastUpdate), localTimeZone)})</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
