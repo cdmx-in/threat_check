@@ -26,6 +26,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // Import Tabs components
 
 const ITEMS_PER_PAGE = 10;
 
@@ -129,202 +130,213 @@ const ClamAVInfo: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col items-center bg-gray-100 dark:bg-gray-950 p-4">
       <div className="w-full max-w-4xl mx-auto space-y-8 mt-8">
-        {/* Card for Current Signature Information */}
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold text-center">Current ClamAV Signature Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {loadingCurrentInfo ? (
-              <div className="text-center text-gray-600 dark:text-gray-400 flex items-center justify-center py-8">
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading current signature info...
-              </div>
-            ) : errorCurrentInfo ? (
-              <p className="text-lg text-red-600 dark:text-red-400 text-center py-8">{errorCurrentInfo}</p>
-            ) : currentSignatureInfo ? (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">ClamAV Version:</p>
-                    <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                      {currentSignatureInfo.data.version}
-                    </p>
-                  </div>
-                  <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Total Signatures:</p>
-                    <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                      {currentSignatureInfo.data.totalSignatures.toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Last Overall Update:</p>
-                    <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                      {format(new Date(currentSignatureInfo.data.lastUpdate), 'yyyy-MM-dd HH:mm:ss zzz')}
-                    </p>
-                  </div>
-                  <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
-                    <Button
-                      onClick={handleUpdateSignatures}
-                      disabled={updatingSignatures}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                    >
-                      {updatingSignatures ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating...
-                        </>
-                      ) : (
-                        <>
-                          <RefreshCw className="mr-2 h-4 w-4" /> Update Signatures
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
+        <Tabs defaultValue="current-info" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="current-info">Current Signature Info</TabsTrigger>
+            <TabsTrigger value="update-history">Update History</TabsTrigger>
+          </TabsList>
 
-                {currentSignatureInfo.data.databases && currentSignatureInfo.data.databases.length > 0 ? (
-                  <div className="mt-6">
-                    <h4 className="text-xl font-semibold mb-4">Individual Signature Databases</h4>
+          <TabsContent value="current-info">
+            {/* Card for Current Signature Information */}
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-2xl font-bold text-center">Current ClamAV Signature Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {loadingCurrentInfo ? (
+                  <div className="text-center text-gray-600 dark:text-gray-400 flex items-center justify-center py-8">
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading current signature info...
+                  </div>
+                ) : errorCurrentInfo ? (
+                  <p className="text-lg text-red-600 dark:text-red-400 text-center py-8">{errorCurrentInfo}</p>
+                ) : currentSignatureInfo ? (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">ClamAV Version:</p>
+                        <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                          {currentSignatureInfo.data.version}
+                        </p>
+                      </div>
+                      <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Total Signatures:</p>
+                        <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                          {currentSignatureInfo.data.totalSignatures.toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Last Overall Update:</p>
+                        <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                          {format(new Date(currentSignatureInfo.data.lastUpdate), 'yyyy-MM-dd HH:mm:ss zzz')}
+                        </p>
+                      </div>
+                      <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
+                        <Button
+                          onClick={handleUpdateSignatures}
+                          disabled={updatingSignatures}
+                          className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                        >
+                          {updatingSignatures ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating...
+                            </>
+                          ) : (
+                            <>
+                              <RefreshCw className="mr-2 h-4 w-4" /> Update Signatures
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {currentSignatureInfo.data.databases && currentSignatureInfo.data.databases.length > 0 ? (
+                      <div className="mt-6">
+                        <h4 className="text-xl font-semibold mb-4">Individual Signature Databases</h4>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Name</TableHead>
+                              <TableHead>Signatures</TableHead>
+                              <TableHead>Last Updated</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {currentSignatureInfo.data.databases.map((db, index) => (
+                              <TableRow key={index}>
+                                <TableCell className="font-medium">{db.name}</TableCell>
+                                <TableCell>{db.signatures.toLocaleString()}</TableCell>
+                                <TableCell>{format(new Date(db.lastUpdate), 'yyyy-MM-dd HH:mm:ss zzz')}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    ) : (
+                      <p className="text-center text-gray-500 dark:text-gray-400 mt-6">No individual database information available.</p>
+                    )}
+
+                    {currentSignatureInfo.data.signatures && currentSignatureInfo.data.signatures.length > 0 && (
+                      <div className="mt-6">
+                        <h4 className="text-xl font-semibold mb-4">Recent Signatures</h4>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Name</TableHead>
+                              <TableHead>Type</TableHead>
+                              <TableHead>Database</TableHead>
+                              <TableHead>Date Added</TableHead>
+                              <TableHead>Status</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {currentSignatureInfo.data.signatures.map((sig, index) => (
+                              <TableRow key={index}>
+                                <TableCell className="font-medium">{sig.name}</TableCell>
+                                <TableCell>{sig.type}</TableCell>
+                                <TableCell>{sig.database}</TableCell>
+                                <TableCell>{format(new Date(sig.dateAdded), 'yyyy-MM-dd HH:mm:ss zzz')}</TableCell>
+                                <TableCell>
+                                  <Badge variant={sig.status === "active" ? "default" : "secondary"}>
+                                    {sig.status}
+                                  </Badge>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                  </>
+                ) : null}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="update-history">
+            {/* Card for Signature Update History */}
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-2xl font-bold text-center">Signature Update History</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="mb-4">
+                  <Input
+                    placeholder="Search history by database name or status..."
+                    value={searchTerm}
+                    onChange={handleSearchChange}
+                    className="w-full"
+                  />
+                </div>
+                {loadingHistory ? (
+                  <div className="text-center text-gray-600 dark:text-gray-400 flex items-center justify-center py-8">
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading update history...
+                  </div>
+                ) : errorHistory ? (
+                  <p className="text-lg text-red-600 dark:text-red-400 text-center py-8">{errorHistory}</p>
+                ) : signatureHistory.length === 0 ? (
+                  <p className="text-center text-gray-500 dark:text-gray-400 py-8">No signature update history found.</p>
+                ) : (
+                  <>
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Name</TableHead>
+                          <TableHead>Database</TableHead>
+                          <TableHead>Version</TableHead>
                           <TableHead>Signatures</TableHead>
                           <TableHead>Last Updated</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {currentSignatureInfo.data.databases.map((db, index) => (
-                          <TableRow key={index}>
-                            <TableCell className="font-medium">{db.name}</TableCell>
-                            <TableCell>{db.signatures.toLocaleString()}</TableCell>
-                            <TableCell>{format(new Date(db.lastUpdate), 'yyyy-MM-dd HH:mm:ss zzz')}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                ) : (
-                  <p className="text-center text-gray-500 dark:text-gray-400 mt-6">No individual database information available.</p>
-                )}
-
-                {currentSignatureInfo.data.signatures && currentSignatureInfo.data.signatures.length > 0 && (
-                  <div className="mt-6">
-                    <h4 className="text-xl font-semibold mb-4">Recent Signatures</h4>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Database</TableHead>
-                          <TableHead>Date Added</TableHead>
                           <TableHead>Status</TableHead>
+                          <TableHead>Details</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {currentSignatureInfo.data.signatures.map((sig, index) => (
-                          <TableRow key={index}>
-                            <TableCell className="font-medium">{sig.name}</TableCell>
-                            <TableCell>{sig.type}</TableCell>
-                            <TableCell>{sig.database}</TableCell>
-                            <TableCell>{format(new Date(sig.dateAdded), 'yyyy-MM-dd HH:mm:ss zzz')}</TableCell>
+                        {signatureHistory.map((entry) => (
+                          <TableRow key={entry.id}>
+                            <TableCell className="font-medium">{entry.database_name}</TableCell>
+                            <TableCell>{entry.version.split('/')[0]}</TableCell>
+                            <TableCell>{entry.signatures_count.toLocaleString()}</TableCell>
+                            <TableCell>{format(new Date(entry.last_updated), 'yyyy-MM-dd HH:mm:ss zzz')}</TableCell>
                             <TableCell>
-                              <Badge variant={sig.status === "active" ? "default" : "secondary"}>
-                                {sig.status}
+                              <Badge variant={entry.update_status === "SUCCESS" ? "default" : "destructive"}>
+                                {entry.update_status}
                               </Badge>
                             </TableCell>
+                            <TableCell className="text-sm text-gray-600 dark:text-gray-400">{entry.update_details}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
                     </Table>
-                  </div>
+                    <Pagination className="mt-4">
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                          />
+                        </PaginationItem>
+                        {[...Array(totalPages)].map((_, index) => (
+                          <PaginationItem key={index}>
+                            <PaginationLink
+                              isActive={currentPage === index + 1}
+                              onClick={() => setCurrentPage(index + 1)}
+                            >
+                              {index + 1}
+                            </PaginationLink>
+                          </PaginationItem>
+                        ))}
+                        <PaginationItem>
+                          <PaginationNext
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  </>
                 )}
-              </>
-            ) : null}
-          </CardContent>
-        </Card>
-
-        {/* Card for Signature Update History */}
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold text-center">Signature Update History</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="mb-4">
-              <Input
-                placeholder="Search history by database name or status..."
-                value={searchTerm}
-                onChange={handleSearchChange}
-                className="w-full"
-              />
-            </div>
-            {loadingHistory ? (
-              <div className="text-center text-gray-600 dark:text-gray-400 flex items-center justify-center py-8">
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading update history...
-              </div>
-            ) : errorHistory ? (
-              <p className="text-lg text-red-600 dark:text-red-400 text-center py-8">{errorHistory}</p>
-            ) : signatureHistory.length === 0 ? (
-              <p className="text-center text-gray-500 dark:text-gray-400 py-8">No signature update history found.</p>
-            ) : (
-              <>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Database</TableHead>
-                      <TableHead>Version</TableHead>
-                      <TableHead>Signatures</TableHead>
-                      <TableHead>Last Updated</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Details</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {signatureHistory.map((entry) => (
-                      <TableRow key={entry.id}>
-                        <TableCell className="font-medium">{entry.database_name}</TableCell>
-                        <TableCell>{entry.version.split('/')[0]}</TableCell>
-                        <TableCell>{entry.signatures_count.toLocaleString()}</TableCell>
-                        <TableCell>{format(new Date(entry.last_updated), 'yyyy-MM-dd HH:mm:ss zzz')}</TableCell>
-                        <TableCell>
-                          <Badge variant={entry.update_status === "SUCCESS" ? "default" : "destructive"}>
-                            {entry.update_status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm text-gray-600 dark:text-gray-400">{entry.update_details}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                <Pagination className="mt-4">
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious
-                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                        disabled={currentPage === 1}
-                      />
-                    </PaginationItem>
-                    {[...Array(totalPages)].map((_, index) => (
-                      <PaginationItem key={index}>
-                        <PaginationLink
-                          isActive={currentPage === index + 1}
-                          onClick={() => setCurrentPage(index + 1)}
-                        >
-                          {index + 1}
-                        </PaginationLink>
-                      </PaginationItem>
-                    ))}
-                    <PaginationItem>
-                      <PaginationNext
-                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                        disabled={currentPage === totalPages}
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              </>
-            )}
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
       <MadeWithDyad />
     </div>
