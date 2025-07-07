@@ -131,9 +131,8 @@ const ClamAVInfo: React.FC = () => {
     <div className="min-h-screen flex flex-col items-center bg-gray-100 dark:bg-gray-950 p-4">
       <div className="w-full max-w-4xl mx-auto space-y-8 mt-8">
         <Tabs defaultValue="current-info" className="w-full">
-          <TabsList className="grid w-full grid-cols-3"> {/* Changed to grid-cols-3 */}
+          <TabsList className="grid w-full grid-cols-2"> {/* Changed to grid-cols-2 */}
             <TabsTrigger value="current-info">Current Signature Info</TabsTrigger>
-            <TabsTrigger value="recent-signatures">Recent Signatures</TabsTrigger> {/* New Tab Trigger */}
             <TabsTrigger value="update-history">Update History</TabsTrigger>
           </TabsList>
 
@@ -190,7 +189,7 @@ const ClamAVInfo: React.FC = () => {
                       </div>
                     </div>
 
-                    {currentSignatureInfo.data.databases && currentSignatureInfo.data.databases.length > 0 ? (
+                    {currentSignatureInfo.data.databases && currentSignatureInfo.data.databases.length > 0 && (
                       <div className="mt-6">
                         <h4 className="text-xl font-semibold mb-4">Individual Signature Databases</h4>
                         <Table>
@@ -205,63 +204,16 @@ const ClamAVInfo: React.FC = () => {
                             {currentSignatureInfo.data.databases.map((db, index) => (
                               <TableRow key={index}>
                                 <TableCell className="font-medium">{db.name}</TableCell>
+                                <TableCell>{db.signatures.toLocaleString()}</TableCell>
                                 <TableCell>{format(new Date(db.lastUpdate), 'yyyy-MM-dd HH:mm:ss zzz')}</TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
                         </Table>
                       </div>
-                    ) : (
-                      <p className="text-center text-gray-500 dark:text-gray-400 mt-6">No individual database information available.</p>
                     )}
                   </>
                 ) : null}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="recent-signatures"> {/* New Tab Content */}
-            <Card className="shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-2xl font-bold text-center">Recent Signatures</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {loadingCurrentInfo ? (
-                  <div className="text-center text-gray-600 dark:text-gray-400 flex items-center justify-center py-8">
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading recent signatures...
-                  </div>
-                ) : errorCurrentInfo ? (
-                  <p className="text-lg text-red-600 dark:text-red-400 text-center py-8">{errorCurrentInfo}</p>
-                ) : currentSignatureInfo && currentSignatureInfo.data.signatures && currentSignatureInfo.data.signatures.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Database</TableHead>
-                        <TableHead>Date Added</TableHead>
-                        <TableHead>Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {currentSignatureInfo.data.signatures.map((sig, index) => (
-                        <TableRow key={index}>
-                          <TableCell className="font-medium">{sig.name}</TableCell>
-                          <TableCell>{sig.type}</TableCell>
-                          <TableCell>{sig.database}</TableCell>
-                          <TableCell>{format(new Date(sig.dateAdded), 'yyyy-MM-dd HH:mm:ss zzz')}</TableCell>
-                          <TableCell>
-                            <Badge variant={sig.status === "active" ? "default" : "secondary"}>
-                              {sig.status}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <p className="text-center text-gray-500 dark:text-gray-400 py-8">No recent signature information available.</p>
-                )}
               </CardContent>
             </Card>
           </TabsContent>
