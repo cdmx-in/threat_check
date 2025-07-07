@@ -59,22 +59,6 @@ const UpdateHistoryTable: React.FC<UpdateHistoryTableProps> = ({
   setCurrentPageHistory,
   totalPagesHistory,
 }) => {
-  // Function to get the local timezone abbreviation (e.g., IST, EST, EDT)
-  const getLocalTimeZoneAbbreviation = () => {
-    try {
-      const date = new Date();
-      const options: Intl.DateTimeFormatOptions = { timeZoneName: 'short' };
-      const parts = new Intl.DateTimeFormat('en-US', options).formatToParts(date);
-      const timeZonePart = parts.find(part => part.type === 'timeZoneName');
-      return timeZonePart ? ` (${timeZonePart.value})` : '';
-    } catch (e) {
-      console.error("Could not get timezone abbreviation:", e);
-      return '';
-    }
-  };
-
-  const timezoneAbbreviation = getLocalTimeZoneAbbreviation();
-
   return (
     <Card className="shadow-lg">
       <CardHeader>
@@ -119,7 +103,7 @@ const UpdateHistoryTable: React.FC<UpdateHistoryTableProps> = ({
                   <TableHead>Database</TableHead>
                   <TableHead>Version</TableHead>
                   <TableHead>Signatures</TableHead>
-                  <TableHead>Last Updated{timezoneAbbreviation}</TableHead>
+                  <TableHead>Last Updated (UTC)</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Details</TableHead>
                 </TableRow>

@@ -23,22 +23,6 @@ const CurrentSignatureInfoCard: React.FC<CurrentSignatureInfoCardProps> = ({
   updatingSignatures,
   handleUpdateSignatures,
 }) => {
-  // Function to get the local timezone abbreviation (e.g., IST, EST, EDT)
-  const getLocalTimeZoneAbbreviation = () => {
-    try {
-      const date = new Date();
-      const options: Intl.DateTimeFormatOptions = { timeZoneName: 'short' };
-      const parts = new Intl.DateTimeFormat('en-US', options).formatToParts(date);
-      const timeZonePart = parts.find(part => part.type === 'timeZoneName');
-      return timeZonePart ? ` (${timeZonePart.value})` : '';
-    } catch (e) {
-      console.error("Could not get timezone abbreviation:", e);
-      return '';
-    }
-  };
-
-  const timezoneAbbreviation = getLocalTimeZoneAbbreviation();
-
   return (
     <Card className="shadow-lg">
       <CardHeader>
@@ -67,7 +51,7 @@ const CurrentSignatureInfoCard: React.FC<CurrentSignatureInfoCardProps> = ({
                 </p>
               </div>
               <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Last Overall Update{timezoneAbbreviation}:</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Last Overall Update (UTC):</p>
                 <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
                   {format(new Date(currentSignatureInfo.data.lastUpdate), 'yyyy-MM-dd HH:mm:ss')}
                 </p>
