@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/pagination";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils"; // Import cn utility
 
 const ITEMS_PER_PAGE = 10;
 
@@ -131,9 +132,9 @@ const ClamAVInfo: React.FC = () => {
     <div className="min-h-screen flex flex-col items-center bg-gray-100 dark:bg-gray-950 p-4">
       <div className="w-full max-w-4xl mx-auto space-y-8 mt-8">
         <Tabs defaultValue="current-info" className="w-full">
-          <TabsList className="grid w-full grid-cols-3"> {/* Changed to grid-cols-3 */}
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="current-info">Current Signature Info</TabsTrigger>
-            <TabsTrigger value="recent-signatures">Recent Signatures</TabsTrigger> {/* Re-added tab */}
+            <TabsTrigger value="recent-signatures">Recent Signatures</TabsTrigger>
             <TabsTrigger value="update-history">Update History</TabsTrigger>
           </TabsList>
 
@@ -219,7 +220,7 @@ const ClamAVInfo: React.FC = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="recent-signatures"> {/* Re-added content */}
+          <TabsContent value="recent-signatures">
             <Card className="shadow-lg">
               <CardHeader>
                 <CardTitle className="text-2xl font-bold text-center">Recent Signatures</CardTitle>
@@ -250,7 +251,12 @@ const ClamAVInfo: React.FC = () => {
                           <TableCell>{signature.database}</TableCell>
                           <TableCell>{format(new Date(signature.dateAdded), 'yyyy-MM-dd HH:mm:ss zzz')}</TableCell>
                           <TableCell>
-                            <Badge variant={signature.status === "ACTIVE" ? "default" : "secondary"}>
+                            <Badge 
+                              className={cn(
+                                signature.status === "ACTIVE" && "bg-green-600 text-white hover:bg-green-700",
+                                signature.status !== "ACTIVE" && "bg-gray-500 text-white hover:bg-gray-600" // Neutral color for non-active
+                              )}
+                            >
                               {signature.status}
                             </Badge>
                           </TableCell>
@@ -309,7 +315,12 @@ const ClamAVInfo: React.FC = () => {
                             <TableCell>{entry.signatures_count.toLocaleString()}</TableCell>
                             <TableCell>{format(new Date(entry.last_updated), 'yyyy-MM-dd HH:mm:ss zzz')}</TableCell>
                             <TableCell>
-                              <Badge variant={entry.update_status === "SUCCESS" ? "default" : "destructive"}>
+                              <Badge 
+                                className={cn(
+                                  entry.update_status === "SUCCESS" && "bg-green-600 text-white hover:bg-green-700",
+                                  entry.update_status === "FAILURE" && "bg-red-600 text-white hover:bg-red-700"
+                                )}
+                              >
                                 {entry.update_status}
                               </Badge>
                             </TableCell>
