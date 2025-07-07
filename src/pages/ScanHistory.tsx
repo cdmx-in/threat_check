@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { api, ScanLogEntry } from "@/services/api";
-import { format } = "date-fns";
+import { format } from "date-fns";
 import { Eye } from "lucide-react";
 import { cn } from "@/lib/utils"; // Import cn utility
 
