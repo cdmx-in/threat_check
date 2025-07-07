@@ -59,6 +59,22 @@ const UpdateHistoryTable: React.FC<UpdateHistoryTableProps> = ({
   setCurrentPageHistory,
   totalPagesHistory,
 }) => {
+  // Function to get the local timezone abbreviation for the header
+  const getLocalTimeZoneAbbreviation = () => {
+    try {
+      const date = new Date();
+      const options: Intl.DateTimeFormatOptions = { timeZoneName: 'short' };
+      const parts = new Intl.DateTimeFormat('en-US', options).formatToParts(date);
+      const timeZonePart = parts.find(part => part.type === 'timeZoneName');
+      return timeZonePart ? ` (${timeZonePart.value})` : '';
+    } catch (e) {
+      console.error("Could not get timezone abbreviation:", e);
+      return '';
+    }
+  };
+
+  const timezoneAbbreviation = getLocalTimeZoneAbbreviation();
+
   return (
     <Card className="shadow-lg">
       <CardHeader>
@@ -103,7 +119,7 @@ const UpdateHistoryTable: React.FC<UpdateHistoryTableProps> = ({
                   <TableHead>Database</TableHead>
                   <TableHead>Version</TableHead>
                   <TableHead>Signatures</TableHead>
-                  <TableHead>Last Updated (Timezone)</TableHead>
+                  <TableHead>Last Updated{timezoneAbbreviation}</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Details</TableHead>
                 </TableRow>
@@ -114,7 +130,7 @@ const UpdateHistoryTable: React.FC<UpdateHistoryTableProps> = ({
                     <TableCell className="font-medium">{entry.database_name}</TableCell>
                     <TableCell>{entry.version.split('/')[0]}</TableCell>
                     <TableCell>{entry.signatures_count.toLocaleString()}</TableCell>
-                    <TableCell>{format(new Date(entry.last_updated), 'yyyy-MM-dd HH:mm:ss zzz')}</TableCell>
+                    <TableCell>{format(new Date(entry.last_updated), 'yyyy-MM-dd HH:mm:ss')}</TableCell>
                     <TableCell>
                       <Badge 
                         className={cn(
