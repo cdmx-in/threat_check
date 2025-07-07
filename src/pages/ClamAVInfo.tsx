@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } => "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -318,8 +318,8 @@ const ClamAVInfo: React.FC = () => {
                               <Badge 
                                 className={cn(
                                   entry.update_status === "SUCCESS" && "bg-green-600 text-white hover:bg-green-700",
+                                  entry.update_status === "FAILURE" && "bg-red-600 text-white hover:bg-red-700"
                                 )}
-                                variant={entry.update_status === "FAILURE" ? "destructive" : undefined}
                               >
                                 {entry.update_status}
                               </Badge>
