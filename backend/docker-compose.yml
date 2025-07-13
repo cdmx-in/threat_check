@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  threatcheck-api:
+    build: .
+    container_name: threatcheck-api
+    ports:
+      - "3765:3000"
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=threatcheck-postgres
+      - DB_PORT=5432
+      - DB_NAME=threatcheck
+      - DB_USER=threatcheck_user
+      - DB_PASSWORD=threatcheck_password
+      - CLAM_HOST=threatcheck-clamav
+      - CLAM_PORT=3310
+    volumes:
+      - ./uploads:/tmp/uploads
+    depends_on:
+      - threatcheck-postgres
+      - threatcheck-clamav
+    networks:
+      - threatcheck-network
+    restart: unless-stopped
+
+  threatcheck-postgres:
+    image: postgres:15-alpine
+    container_name: threatcheck-postgres
+    environment:
+      POSTGRES_DB: threatcheck
+      POSTGRES_USER: threatcheck_user
+      POSTGRES_PASSWORD: threatcheck_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - threatcheck-network
+
+  threatcheck-clamav:
+    image: clamav/clamav:latest
+    container_name: threatcheck-clamav
+    ports:
+      - "3310:3310"
+    volumes:
+      - clamav_data:/var/lib/clamav
+    networks:
+      - threatcheck-network
+    healthcheck:
+      test: ["CMD", "sh", "-c", "clamdscan --ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+volumes:
+  postgres_data:
+  clamav_data:
+
+networks:
+  threatcheck-network:
+    driver: bridge
