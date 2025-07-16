@@ -118,7 +118,7 @@ const ScanHistory: React.FC = () => {
                         {scan.filename}
                       </Link>
                     </TableCell>
-                    <TableCell>{format(new Date(scan.scan_time), 'yyyy-MM-dd HH:mm:ss')}</TableCell>
+                    <TableCell>{format(new Date(scan.scan_time), 'yyyy-MM-dd hh:mm:ss a')}</TableCell>
                     <TableCell>
                       <Badge 
                         className={cn(

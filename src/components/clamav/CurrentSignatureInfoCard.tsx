@@ -83,7 +83,7 @@ const CurrentSignatureInfoCard: React.FC<CurrentSignatureInfoCardProps> = ({
               <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
                 <p className="text-sm text-gray-500 dark:text-gray-400">Last Overall Update ({getTimeZoneAbbreviation(new Date(currentSignatureInfo.data.lastUpdate), localTimeZone)}):</p>
                 <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                  {format(new Date(currentSignatureInfo.data.lastUpdate), 'yyyy-MM-dd HH:mm:ss')}
+                  {format(new Date(currentSignatureInfo.data.lastUpdate), 'yyyy-MM-dd hh:mm:ss a')}
                 </p>
               </div>
               <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
@@ -121,7 +121,7 @@ const CurrentSignatureInfoCard: React.FC<CurrentSignatureInfoCardProps> = ({
                       <TableRow key={index}>
                         <TableCell className="font-medium">{db.name}</TableCell>
                         <TableCell>{db.signatures.toLocaleString()}</TableCell>
-                        <TableCell>{format(new Date(db.lastUpdate), 'yyyy-MM-dd HH:mm:ss')}</TableCell>
+                        <TableCell>{format(new Date(db.lastUpdate), 'yyyy-MM-dd hh:mm:ss a')}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

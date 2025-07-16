@@ -144,7 +144,7 @@ const UpdateHistoryTable: React.FC<UpdateHistoryTableProps> = ({
                     <TableCell className="font-medium">{entry.database_name}</TableCell>
                     <TableCell>{entry.version.split('/')[0]}</TableCell>
                     <TableCell>{entry.signatures_count.toLocaleString()}</TableCell>
-                    <TableCell>{format(new Date(entry.last_updated), 'yyyy-MM-dd HH:mm:ss')}</TableCell>
+                    <TableCell>{format(new Date(entry.last_updated), 'yyyy-MM-dd hh:mm:ss a')}</TableCell>
                     <TableCell>
                       <Badge 
                         className={cn(

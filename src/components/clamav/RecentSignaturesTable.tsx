@@ -148,7 +148,7 @@ const RecentSignaturesTable: React.FC<RecentSignaturesTableProps> = ({
                         <TableCell className="font-medium">{signature.name}</TableCell>
                         <TableCell>{signature.type}</TableCell>
                         <TableCell>{signature.database}</TableCell>
-                        <TableCell>{format(new Date(signature.dateAdded), 'yyyy-MM-dd HH:mm:ss')}</TableCell>
+                        <TableCell>{format(new Date(signature.dateAdded), 'yyyy-MM-dd hh:mm:ss a')}</TableCell>
                         <TableCell>
                           <Badge 
                             className={cn(
