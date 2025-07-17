@@ -3,14 +3,13 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
-import { SignatureInfoResponse, SignatureListResponse } from "@/services/api"; // Import SignatureListResponse
+import { SignatureInfoResponse } from "@/services/api"; // Removed SignatureListResponse
 
 interface CurrentSignatureInfoCardProps {
   currentSignatureInfo: SignatureInfoResponse | null;
-  signatureList: SignatureListResponse | null; // New prop for detailed list
+  // Removed signatureList prop
   loadingCurrentInfo: boolean;
   errorCurrentInfo: string | null;
   updatingSignatures: boolean;
@@ -47,7 +46,7 @@ const getTimeZoneAbbreviation = (date: Date, timeZone: string) => {
 
 const CurrentSignatureInfoCard: React.FC<CurrentSignatureInfoCardProps> = ({
   currentSignatureInfo,
-  signatureList, // Use the new prop
+  // Removed signatureList from destructuring
   loadingCurrentInfo,
   errorCurrentInfo,
   updatingSignatures,
@@ -55,9 +54,9 @@ const CurrentSignatureInfoCard: React.FC<CurrentSignatureInfoCardProps> = ({
 }) => {
   const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-  // Determine which data source to use for overall info and individual databases
+  // Determine which data source to use for overall info
   const displayInfo = currentSignatureInfo?.data; // Use 'data' from /signatures/info
-  const displayDatabases = signatureList?.databases; // Use 'databases' from /signatures/list
+  // Removed displayDatabases as it's no longer rendered here
 
   return (
     <Card className="shadow-lg">
@@ -110,32 +109,7 @@ const CurrentSignatureInfoCard: React.FC<CurrentSignatureInfoCardProps> = ({
                 </Button>
               </div>
             </div>
-
-            {displayDatabases && displayDatabases.length > 0 && (
-              <div className="mt-6">
-                <h4 className="text-xl font-semibold mb-4">Individual Signature Databases</h4>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Signatures</TableHead>
-                      <TableHead>Version</TableHead>
-                      <TableHead>Build Time</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {displayDatabases.map((db, index) => (
-                      <TableRow key={index}>
-                        <TableCell className="font-medium">{db.name}</TableCell>
-                        <TableCell>{db.signatures.toLocaleString()}</TableCell>
-                        <TableCell>{db.version}</TableCell>
-                        <TableCell>{db.buildTime}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
+            {/* Removed Individual Databases Table */}
           </>
         ) : null}
       </CardContent>

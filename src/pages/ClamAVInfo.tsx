@@ -7,12 +7,13 @@ import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CurrentSignatureInfoCard from "@/components/clamav/CurrentSignatureInfoCard";
 import UpdateHistoryTable from "@/components/clamav/UpdateHistoryTable";
+import IndividualDatabasesTable from "@/components/clamav/IndividualDatabasesTable"; // New import
 
 const DEFAULT_ITEMS_PER_PAGE = 10; // Default items per page for both sections
 
 const ClamAVInfo: React.FC = () => {
   const [currentSignatureInfo, setCurrentSignatureInfo] = useState<SignatureInfoResponse | null>(null);
-  const [signatureList, setSignatureList] = useState<SignatureListResponse | null>(null); // New state for /api/signatures/list
+  const [signatureList, setSignatureList] = useState<SignatureListResponse | null>(null); // State for /api/signatures/list
   const [signatureHistory, setSignatureHistory] = useState<SignatureUpdateHistoryEntry[]>([]);
   const [totalHistoryCount, setTotalHistoryCount] = useState(0);
   const [loadingCurrentInfo, setLoadingCurrentInfo] = useState(true);
@@ -141,19 +142,27 @@ const ClamAVInfo: React.FC = () => {
     <div className="min-h-screen flex flex-col items-center bg-gray-100 dark:bg-gray-950 p-4">
       <div className="w-full max-w-4xl mx-auto space-y-8 mt-8">
         <Tabs defaultValue="current-info" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3"> {/* Changed grid-cols-2 to grid-cols-3 */}
             <TabsTrigger value="current-info">Current Signature Info</TabsTrigger>
+            <TabsTrigger value="individual-databases">Individual Databases</TabsTrigger> {/* New Tab */}
             <TabsTrigger value="update-history">Update History</TabsTrigger>
           </TabsList>
 
           <TabsContent value="current-info">
             <CurrentSignatureInfoCard
               currentSignatureInfo={currentSignatureInfo}
-              signatureList={signatureList} // Pass the new signatureList
               loadingCurrentInfo={loadingCurrentInfo}
               errorCurrentInfo={errorCurrentInfo}
               updatingSignatures={updatingSignatures}
               handleUpdateSignatures={handleUpdateSignatures}
+            />
+          </TabsContent>
+
+          <TabsContent value="individual-databases"> {/* New Tab Content */}
+            <IndividualDatabasesTable
+              signatureList={signatureList}
+              loading={loadingCurrentInfo} // Use loading state from current info fetch
+              error={errorCurrentInfo} // Use error state from current info fetch
             />
           </TabsContent>
 
