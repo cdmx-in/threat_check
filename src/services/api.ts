@@ -87,18 +87,14 @@ interface SignatureUpdateHistoryEntry {
   file_size: number | null;
 }
 
+// Reverted SignatureHistoryResponse to match backend/README.md
 interface SignatureHistoryResponse {
   success: boolean;
-  data: {
-    updates: SignatureUpdateHistoryEntry[];
-    pagination: {
-      page: number;
-      limit: number;
-      total: number;
-      pages: number;
-    };
-  };
-  timestamp: string;
+  count: number; // Direct count property
+  limit: number;
+  offset: number;
+  data: SignatureUpdateHistoryEntry[]; // Direct data array
+  timestamp?: string; // Optional timestamp as it's not always present in README example
 }
 
 interface SignatureUpdateResult {
@@ -230,7 +226,7 @@ export type {
   SignatureDatabaseInfo, // Exported for use in CurrentSignatureInfoCard
   CurrentSignatureInfoData, // Exported for use in CurrentSignatureInfoCard
   SignatureUpdateHistoryEntry,
-  SignatureHistoryResponse,
+  SignatureHistoryResponse, // This is the new, corrected one
   SignatureUpdateResponse,
   SignatureListItem, // Exported for use in CurrentSignatureInfoCard
   SignatureListResponse,
