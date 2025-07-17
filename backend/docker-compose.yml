@@ -17,6 +17,7 @@ services:
       - CLAM_PORT=3310
     volumes:
       - ./uploads:/tmp/uploads
+      - clamav_data:/var/lib/clamav:ro
     depends_on:
       - threatcheck-postgres
       - threatcheck-clamav

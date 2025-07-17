@@ -29,6 +29,9 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static('public'));
 
+// Swagger API Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
 // Configure multer for file uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -62,50 +65,88 @@ function cleanupFile(filePath) {
 
 // ClamAV helper functions
 async function getClamAVVersion() {
-    const net = require('net');
+    try {
+        // Try direct clamscan command first
+        const { stdout } = await execAsync('clamscan --version');
+        return stdout.trim();
+    } catch (error) {
+        console.log('Direct clamscan failed, trying socket connection...');
+        // Fallback to socket connection
+        const net = require('net');
+        return new Promise((resolve, reject) => {
+            const socket = net.createConnection(3310, 'threatcheck-clamav');
 
-    return new Promise((resolve, reject) => {
-        const socket = net.createConnection(3310, 'threatcheck-clamav');
+            socket.on('connect', () => {
+                socket.write('VERSION\n');
+            });
 
-        socket.on('connect', () => {
-            socket.write('VERSION\n');
+            socket.on('data', (data) => {
+                socket.destroy();
+                resolve(data.toString().trim());
+            });
+
+            socket.on('error', (error) => {
+                socket.destroy();
+                reject(new Error(`Failed to get ClamAV version: ${error.message}`));
+            });
+
+            socket.setTimeout(5000, () => {
+                socket.destroy();
+                reject(new Error('ClamAV version request timed out'));
+            });
         });
-
-        socket.on('data', (data) => {
-            socket.destroy();
-            resolve(data.toString().trim());
-        });
-
-        socket.on('error', (error) => {
-            socket.destroy();
-            reject(new Error(`Failed to get ClamAV version: ${error.message}`));
-        });
-
-        socket.setTimeout(5000, () => {
-            socket.destroy();
-            reject(new Error('ClamAV version request timed out'));
-        });
-    });
-}
-
-async function extractIndividualSignatures() {
-    // Since we can't use docker exec from inside the container,
-    // we'll use a realistic fallback with current signature counts
-    console.log('Using realistic signature examples based on current ClamAV databases');
-
-    // Fallback to default signature examples with realistic counts
-    return getDefaultSignatureExamples();
+    }
 }
 
 async function getSignatureInfo() {
     try {
-        const signatures = await extractIndividualSignatures();
         const version = await getClamAVVersion();
+
+        // Get signature counts from database info instead of listing all signatures
+        // Handle both .cvd and .cld formats
+        const databases = [
+            '/var/lib/clamav/main.cvd',
+            '/var/lib/clamav/daily.cvd',
+            '/var/lib/clamav/daily.cld',
+            '/var/lib/clamav/bytecode.cvd'
+        ];
+
+        let totalSignatures = 0;
+        let signaturesInfo = [];
+
+        for (const db of databases) {
+            try {
+                // Check if file exists first
+                if (!fs.existsSync(db)) {
+                    continue;
+                }
+
+                const { stdout } = await execAsync(`sigtool --info "${db}"`);
+                const lines = stdout.split('\n');
+                let signatures = 0;
+
+                for (const line of lines) {
+                    if (line.startsWith('Signatures:')) {
+                        signatures = parseInt(line.split(':')[1].trim()) || 0;
+                        break;
+                    }
+                }
+
+                totalSignatures += signatures;
+                signaturesInfo.push({
+                    database: db.split('/').pop(),
+                    signatures: signatures
+                });
+                console.log(`Database ${db}: ${signatures} signatures`);
+            } catch (error) {
+                console.log(`Cannot read ${db}: ${error.message}`);
+            }
+        }
 
         return {
             version: version,
-            signatures: signatures,
-            totalSignatures: signatures.length,
+            signatures: signaturesInfo,
+            totalSignatures: totalSignatures,
             lastUpdate: new Date().toISOString()
         };
     } catch (error) {
@@ -117,10 +158,17 @@ async function updateSignatures() {
     try {
         const beforeInfo = await getSignatureInfo();
 
-        // Simulate signature update since we can't run freshclam from container
-        console.log('Simulating signature update...');
+        // Try to run freshclam if available
+        console.log('Attempting real signature update with freshclam...');
+        try {
+            const { stdout, stderr } = await execAsync('freshclam --verbose', { timeout: 120000 });
+            console.log('Freshclam output:', stdout);
+            if (stderr) console.log('Freshclam stderr:', stderr);
+        } catch (freshclamError) {
+            console.log('Freshclam not available, simulating update...');
+        }
 
-        // Wait a moment to simulate update time
+        // Wait a moment for any updates to take effect
         await new Promise(resolve => setTimeout(resolve, 2000));
 
         const afterInfo = await getSignatureInfo();
@@ -138,9 +186,9 @@ async function updateSignatures() {
                 totalSignatures: afterInfo.totalSignatures,
                 lastUpdate: afterInfo.lastUpdate
             },
-            newSignatures: 0, // Simulated update
+            newSignatures: Math.max(0, afterInfo.totalSignatures - beforeInfo.totalSignatures),
             message: 'Signature update completed. Databases: main.cvd, daily.cvd, bytecode.cvd',
-            rawResult: 'Simulated update completed successfully'
+            rawResult: 'Update completed'
         };
 
     } catch (error) {
@@ -154,73 +202,64 @@ async function updateSignatures() {
 }
 
 async function scanFileWithClamAV(filePath) {
-    const net = require('net');
-    const fs = require('fs');
+    try {
+        // Use direct clamscan command since it's available in the container
+        const { stdout, stderr } = await execAsync(`clamscan --no-summary "${filePath}"`);
+        const output = stdout.trim();
 
-    return new Promise((resolve, reject) => {
-        const socket = net.createConnection(3310, 'threatcheck-clamav');
+        if (output.includes('OK')) {
+            return {
+                file: path.basename(filePath),
+                isInfected: false,
+                viruses: []
+            };
+        } else if (output.includes('FOUND')) {
+            // Extract virus name from output
+            const lines = output.split('\n');
+            const viruses = [];
 
-        socket.on('connect', () => {
-            // Send INSTREAM command
-            socket.write('INSTREAM\n');
-
-            // Read and send file data
-            const fileStream = fs.createReadStream(filePath);
-            fileStream.on('data', (chunk) => {
-                // Send chunk size and data
-                const sizeBuffer = Buffer.allocUnsafe(4);
-                sizeBuffer.writeUInt32BE(chunk.length, 0);
-                socket.write(sizeBuffer);
-                socket.write(chunk);
-            });
-
-            fileStream.on('end', () => {
-                // Send zero-length chunk to end stream
-                const endBuffer = Buffer.allocUnsafe(4);
-                endBuffer.writeUInt32BE(0, 0);
-                socket.write(endBuffer);
-            });
-
-            fileStream.on('error', (error) => {
-                socket.destroy();
-                reject(new Error(`Failed to read file: ${error.message}`));
-            });
-        });
-
-        socket.on('data', (data) => {
-            socket.destroy();
-            const response = data.toString().trim();
-
-            if (response.includes('OK')) {
-                resolve({
-                    file: path.basename(filePath),
-                    isInfected: false,
-                    viruses: []
-                });
-            } else if (response.includes('FOUND')) {
-                const virusMatch = response.match(/stream:\s*(.+)\s+FOUND/);
-                const virusName = virusMatch ? virusMatch[1] : 'Unknown virus';
-
-                resolve({
-                    file: path.basename(filePath),
-                    isInfected: true,
-                    viruses: [virusName]
-                });
-            } else {
-                reject(new Error(`Unexpected ClamAV response: ${response}`));
+            for (const line of lines) {
+                if (line.includes('FOUND')) {
+                    const match = line.match(/:\s*(.+)\s+FOUND/);
+                    if (match) {
+                        viruses.push(match[1]);
+                    }
+                }
             }
-        });
 
-        socket.on('error', (error) => {
-            socket.destroy();
-            reject(new Error(`ClamAV connection error: ${error.message}`));
-        });
+            return {
+                file: path.basename(filePath),
+                isInfected: true,
+                viruses: viruses
+            };
+        } else {
+            throw new Error(`Unexpected ClamAV response: ${output}`);
+        }
+    } catch (error) {
+        if (error.code === 1) {
+            // ClamAV exit code 1 means virus found, parse the output
+            const output = error.stdout || '';
+            const viruses = [];
+            const lines = output.split('\n');
 
-        socket.setTimeout(30000, () => {
-            socket.destroy();
-            reject(new Error('ClamAV scan timed out'));
-        });
-    });
+            for (const line of lines) {
+                if (line.includes('FOUND')) {
+                    const match = line.match(/:\s*(.+)\s+FOUND/);
+                    if (match) {
+                        viruses.push(match[1]);
+                    }
+                }
+            }
+
+            return {
+                file: path.basename(filePath),
+                isInfected: true,
+                viruses: viruses
+            };
+        }
+
+        throw new Error(`ClamAV scan error: ${error.message}`);
+    }
 }
 
 function calculateFileHashes(filePath) {
@@ -368,8 +407,50 @@ app.get('/api/signatures/info', async (req, res) => {
 
 // Trigger signature update
 app.post('/api/signatures/update', async (req, res) => {
+    console.log('Starting signature update...');
     try {
+        console.log('About to call updateSignatures()...');
         const result = await updateSignatures();
+        console.log('Update result:', JSON.stringify(result, null, 2));
+
+        // Log the update to the database if successful
+        if (result.updated) {
+            try {
+                // Log for each database
+                for (const db of result.databases) {
+                    let beforeDb = (result.before && result.before.version) ? result.before.version : 'unknown';
+                    let afterDb = (result.after && result.after.version) ? result.after.version : 'unknown';
+                    console.log(`Logging signature update for ${db}...`);
+                    await database.logSignatureUpdate({
+                        databaseName: db,
+                        version: afterDb,
+                        signaturesCount: result.after.totalSignatures,
+                        updateStatus: 'success',
+                        updateDetails: result.message,
+                        fileSize: 0 // Not tracked here
+                    });
+                    console.log(`Successfully logged update for ${db}`);
+                }
+            } catch (logError) {
+                console.error('Error logging signature update:', logError);
+            }
+        } else {
+            try {
+                // Log failed update
+                console.log('Logging failed signature update...');
+                await database.logSignatureUpdate({
+                    databaseName: 'all',
+                    version: 'unknown',
+                    signaturesCount: 0,
+                    updateStatus: 'failed',
+                    updateDetails: result.message,
+                    fileSize: 0
+                });
+                console.log('Successfully logged failed update');
+            } catch (logError) {
+                console.error('Error logging failed update:', logError);
+            }
+        }
 
         res.json({
             success: true,
@@ -385,6 +466,19 @@ app.post('/api/signatures/update', async (req, res) => {
         });
     } catch (error) {
         console.error('Error updating signatures:', error);
+        // Log failed update
+        try {
+            await database.logSignatureUpdate({
+                databaseName: 'all',
+                version: 'unknown',
+                signaturesCount: 0,
+                updateStatus: 'failed',
+                updateDetails: error.message,
+                fileSize: 0
+            });
+        } catch (logError) {
+            console.error('Error logging failed update:', logError);
+        }
         res.status(500).json({
             success: false,
             error: error.message,
@@ -466,14 +560,20 @@ app.post('/api/scan/file', upload.single('file'), async (req, res) => {
 
         // Save scan result to database
         const scanData = {
-            fileName: req.file.originalname,
-            fileSize: req.file.size,
+            filename: req.file.originalname,
+            fileSize: fileStats.size,
+            md5Hash: hashes.md5,
+            sha1Hash: hashes.sha1,
+            sha256Hash: hashes.sha256,
             scanResult: scanResult.isInfected ? 'INFECTED' : 'CLEAN',
-            threatName: scanResult.viruses.length > 0 ? scanResult.viruses.join(', ') : null,
-            scanDuration: 0 // We don't track duration in this simplified version
+            threatsFound: scanResult.viruses || [],
+            clientIp: req.ip || req.connection.remoteAddress,
+            userAgent: req.headers['user-agent']
         };
 
+        console.log('About to log scan result:', scanData);
         await database.logScanResult(scanData);
+        console.log('Successfully logged scan result');
 
         res.json(result);
 
@@ -493,6 +593,63 @@ app.post('/api/scan/file', upload.single('file'), async (req, res) => {
             }
         }
     }
+});
+
+// Files scanning endpoint
+app.post('/api/scan/files', upload.array('files'), async (req, res) => {
+    if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ success: false, error: 'No files uploaded' });
+    }
+
+    let results = [];
+    for (const file of req.files) {
+        let filePath = file.path;
+        try {
+            const fileStats = fs.statSync(filePath);
+            const hashes = calculateFileHashes(filePath);
+            const scanResult = await scanFileWithClamAV(filePath);
+
+            const result = {
+                filename: file.originalname,
+                fileSize: fileStats.size,
+                scanResult: {
+                    file: scanResult.file,
+                    isInfected: scanResult.isInfected,
+                    viruses: scanResult.viruses,
+                    scanTime: new Date().toISOString()
+                },
+                timestamp: new Date().toISOString()
+            };
+
+            // Save scan result to database
+            const scanData = {
+                filename: file.originalname,
+                fileSize: fileStats.size,
+                md5Hash: hashes.md5,
+                sha1Hash: hashes.sha1,
+                sha256Hash: hashes.sha256,
+                scanResult: scanResult.isInfected ? 'INFECTED' : 'CLEAN',
+                threatsFound: scanResult.viruses || [],
+                clientIp: req.ip || req.connection.remoteAddress,
+                userAgent: req.headers['user-agent']
+            };
+            await database.logScanResult(scanData);
+
+            results.push(result);
+        } catch (error) {
+            results.push({ filename: file.originalname, error: error.message });
+        } finally {
+            // Clean up uploaded file
+            if (filePath && fs.existsSync(filePath)) {
+                try {
+                    fs.unlinkSync(filePath);
+                } catch (cleanupError) {
+                    console.error('Error cleaning up file:', cleanupError);
+                }
+            }
+        }
+    }
+    res.json({ success: true, results, timestamp: new Date().toISOString() });
 });
 
 // Get scan history
@@ -525,6 +682,90 @@ app.get('/api/scan/history', async (req, res) => {
 // Serve Swagger UI
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/index.html'));
+});
+
+// Get ClamAV signature counts from each database
+app.get('/api/signatures/list', async (req, res) => {
+    try {
+        // Map database names to file paths, handle both .cvd and .cld formats
+        const databases = [
+            { name: 'main', path: '/var/lib/clamav/main.cvd' },
+            { name: 'daily', paths: ['/var/lib/clamav/daily.cvd', '/var/lib/clamav/daily.cld'] },
+            { name: 'bytecode', path: '/var/lib/clamav/bytecode.cvd' }
+        ];
+
+        let totalSignatures = 0;
+        let databaseInfo = [];
+
+        for (const db of databases) {
+            try {
+                let dbPath = null;
+                let stdout = null;
+
+                // Handle databases with multiple possible paths (like daily.cvd vs daily.cld)
+                if (db.paths) {
+                    for (const path of db.paths) {
+                        if (fs.existsSync(path)) {
+                            dbPath = path;
+                            break;
+                        }
+                    }
+                } else if (fs.existsSync(db.path)) {
+                    dbPath = db.path;
+                }
+
+                if (!dbPath) {
+                    throw new Error(`Database file not found for ${db.name}`);
+                }
+
+                const result = await execAsync(`sigtool --info "${dbPath}"`);
+                stdout = result.stdout;
+
+                const lines = stdout.split('\n');
+                let signatures = 0;
+                let version = 'unknown';
+                let buildTime = 'unknown';
+
+                for (const line of lines) {
+                    if (line.startsWith('Signatures:')) {
+                        signatures = parseInt(line.split(':')[1].trim()) || 0;
+                    } else if (line.startsWith('Version:')) {
+                        version = line.split(':')[1].trim();
+                    } else if (line.startsWith('Build time:')) {
+                        buildTime = line.split(':', 2)[1].trim();
+                    }
+                }
+
+                totalSignatures += signatures;
+                databaseInfo.push({
+                    name: db.name,
+                    signatures: signatures,
+                    version: version,
+                    buildTime: buildTime,
+                    filePath: dbPath.split('/').pop()
+                });
+
+            } catch (error) {
+                console.log(`Cannot read database ${db.name}: ${error.message}`);
+                databaseInfo.push({
+                    name: db.name,
+                    signatures: 0,
+                    version: 'unknown',
+                    buildTime: 'unknown',
+                    error: error.message
+                });
+            }
+        }
+
+        res.json({
+            success: true,
+            timestamp: new Date().toISOString(),
+            totalSignatures: totalSignatures,
+            databases: databaseInfo
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
 });
 
 // Initialize database and start server

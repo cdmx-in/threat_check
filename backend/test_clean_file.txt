@@ -1,0 +1,3 @@
+This is a clean test file for scanning.
+Just some simple text content.
+No malware here!

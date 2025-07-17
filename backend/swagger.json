@@ -586,6 +586,83 @@
           }
         }
       }
+    },
+    "/api/signatures/list": {
+      "get": {
+        "tags": ["Signatures"],
+        "summary": "List ClamAV signature databases",
+        "description": "Get detailed information about each ClamAV signature database including signature counts, versions, and build times",
+        "operationId": "getSignatureDatabases",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved signature database information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2025-07-17T07:21:10.591Z"
+                    },
+                    "totalSignatures": {
+                      "type": "integer",
+                      "example": 8723346
+                    },
+                    "databases": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "example": "main"
+                          },
+                          "signatures": {
+                            "type": "integer",
+                            "example": 6647427
+                          },
+                          "version": {
+                            "type": "string",
+                            "example": "62"
+                          },
+                          "buildTime": {
+                            "type": "string",
+                            "example": "16 Sep 2021 08"
+                          },
+                          "filePath": {
+                            "type": "string",
+                            "example": "main.cvd"
+                          },
+                          "error": {
+                            "type": "string",
+                            "description": "Error message if database could not be read"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error retrieving signature database information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
