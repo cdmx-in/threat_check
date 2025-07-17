@@ -87,14 +87,19 @@ interface SignatureUpdateHistoryEntry {
   file_size: number | null;
 }
 
-// Reverted SignatureHistoryResponse to match backend/README.md
+// Corrected SignatureHistoryResponse to match backend/src/app.js and swagger.json
 interface SignatureHistoryResponse {
   success: boolean;
-  count: number; // Direct count property
-  limit: number;
-  offset: number;
-  data: SignatureUpdateHistoryEntry[]; // Direct data array
-  timestamp?: string; // Optional timestamp as it's not always present in README example
+  timestamp: string;
+  data: {
+    updates: SignatureUpdateHistoryEntry[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      pages: number;
+    };
+  };
 }
 
 interface SignatureUpdateResult {

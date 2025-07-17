@@ -71,20 +71,21 @@ const ClamAVInfo: React.FC = () => {
       const offset = (page - 1) * limit;
       const response: SignatureHistoryResponse = await api.getSignatureHistory(limit, offset);
       
-      // Correctly parse the response based on backend/README.md
-      if (response && Array.isArray(response.data) && typeof response.count === 'number') {
-        setSignatureHistory(response.data);
-        setTotalHistoryCount(response.count);
+      // Correctly parse the response based on backend/src/app.js and swagger.json
+      if (response && response.data && Array.isArray(response.data.updates) && typeof response.data.pagination.total === 'number') {
+        setSignatureHistory(response.data.updates);
+        setTotalHistoryCount(response.data.pagination.total);
         setErrorHistory(null);
         console.log("Update History Pagination Data:", {
-          currentPage: page, // Use the requested page
-          itemsPerPage: limit, // Use the requested limit
-          totalItems: response.count,
-          fetchedItemsCount: response.data.length,
+          currentPage: response.data.pagination.page,
+          itemsPerPage: response.data.pagination.limit,
+          totalItems: response.data.pagination.total,
+          totalPages: response.data.pagination.pages,
+          fetchedItemsCount: response.data.updates.length,
         });
       } else {
         console.warn("API response for signature history was malformed. Received:", response);
-        setErrorHistory("Invalid data format received for signature history. Expected an object with 'data' (array) and 'count' properties.");
+        setErrorHistory("Invalid data format received for signature history. Expected an object with 'data.updates' (array) and 'data.pagination.total' properties.");
         setSignatureHistory([]);
         setTotalHistoryCount(0);
       }
