@@ -64,8 +64,6 @@ interface SignatureDatabase {
   lastUpdate: string; // date-time string
 }
 
-// Removed SignatureEntry as it's no longer part of /api/signatures/info response
-
 interface CurrentSignatureInfo {
   version: string;
   databases: SignatureDatabase[]; // Now required and directly from API
@@ -91,12 +89,19 @@ interface SignatureUpdateHistoryEntry {
   file_size: number | null;
 }
 
+// Corrected SignatureHistoryResponse to match swagger.json
 interface SignatureHistoryResponse {
   success: boolean;
-  count: number; // Total count of records
-  limit: number;
-  offset: number;
-  data: SignatureUpdateHistoryEntry[]; // Direct array of history entries
+  data: {
+    updates: SignatureUpdateHistoryEntry[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      pages: number;
+    };
+  };
+  timestamp: string;
 }
 
 interface SignatureUpdateResult {
@@ -199,12 +204,11 @@ export type {
   HealthResponse,
   SingleScanResponse,
   ScanLogEntry,
-  ScanHistoryResponse,
+  ScanHistoryResponse as ScanHistoryApiResponse, // Renamed to avoid conflict with new SignatureHistoryResponse
   SignatureInfoResponse,
   SignatureDatabase,
-  // SignatureEntry removed
   CurrentSignatureInfo,
   SignatureUpdateHistoryEntry,
-  SignatureHistoryResponse,
+  SignatureHistoryResponse, // This is the new, corrected one
   SignatureUpdateResponse,
 };

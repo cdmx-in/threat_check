@@ -2,11 +2,10 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { api, SignatureInfoResponse, SignatureUpdateHistoryEntry, SignatureUpdateResponse, SignatureHistoryResponse as SignatureHistoryApiResponse } from "@/services/api";
+import { api, SignatureInfoResponse, SignatureUpdateHistoryEntry, SignatureUpdateResponse, SignatureHistoryResponse } from "@/services/api";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CurrentSignatureInfoCard from "@/components/clamav/CurrentSignatureInfoCard";
-// Removed import for RecentSignaturesTable
 import UpdateHistoryTable from "@/components/clamav/UpdateHistoryTable";
 
 const DEFAULT_ITEMS_PER_PAGE = 10; // Default items per page for both sections
@@ -26,11 +25,6 @@ const ClamAVInfo: React.FC = () => {
   const [currentPageHistory, setCurrentPageHistory] = useState(1);
   const [historyItemsPerPage, setHistoryItemsPerPage] = useState(DEFAULT_ITEMS_PER_PAGE);
 
-  // Removed states for Recent Signatures tab:
-  // const [signatureSearchTerm, setSignatureSearchTerm] = useState("");
-  // const [signaturesPerPage, setSignaturesPerPage] = useState(DEFAULT_ITEMS_PER_PAGE);
-  // const [currentPageSignatures, setCurrentPageSignatures] = useState(1);
-
   const fetchSignatureInfo = useCallback(async () => {
     setLoadingCurrentInfo(true);
     setErrorCurrentInfo(null);
@@ -38,10 +32,8 @@ const ClamAVInfo: React.FC = () => {
       const data = await api.getSignatureInfo();
       console.log("Fetched current signature info:", data);
       
-      if (data && data.current) { // Check for 'current' property
+      if (data && data.current) {
         setCurrentSignatureInfo(data);
-        // The updateHistory is now directly on the root of SignatureInfoResponse
-        // No need to set signatureHistory here, as it's fetched by fetchSignatureHistory
       } else {
         const errorMessage = "API response for current signature info is missing or has an invalid 'current' object.";
         console.error(errorMessage, data);
@@ -61,24 +53,23 @@ const ClamAVInfo: React.FC = () => {
     setLoadingHistory(true);
     setErrorHistory(null);
     try {
-      // Convert page to offset for the API call
       const offset = (page - 1) * limit;
-      const response: SignatureHistoryApiResponse = await api.getSignatureHistory(limit, offset);
+      const response: SignatureHistoryResponse = await api.getSignatureHistory(limit, offset);
       
-      if (response && Array.isArray(response.data) && typeof response.count === 'number') {
-        setSignatureHistory(response.data);
-        setTotalHistoryCount(response.count);
+      if (response && response.data && Array.isArray(response.data.updates) && typeof response.data.pagination.total === 'number') {
+        setSignatureHistory(response.data.updates);
+        setTotalHistoryCount(response.data.pagination.total);
         setErrorHistory(null);
         console.log("Update History Pagination Data:", {
-          currentPage: page,
-          itemsPerPage: limit,
-          totalItems: response.count,
-          totalPages: Math.ceil(response.count / limit),
-          fetchedItemsCount: response.data.length,
+          currentPage: response.data.pagination.page,
+          itemsPerPage: response.data.pagination.limit,
+          totalItems: response.data.pagination.total,
+          totalPages: response.data.pagination.pages,
+          fetchedItemsCount: response.data.updates.length,
         });
       } else {
         console.warn("API response for signature history was malformed. Received:", response);
-        setErrorHistory("Invalid data format received for signature history. Expected an object with 'data' (array) and 'count' properties.");
+        setErrorHistory("Invalid data format received for signature history. Expected an object with 'data.updates' (array) and 'data.pagination.total' properties.");
         setSignatureHistory([]);
         setTotalHistoryCount(0);
       }
@@ -132,26 +123,12 @@ const ClamAVInfo: React.FC = () => {
 
   const totalPagesHistory = Math.ceil(totalHistoryCount / historyItemsPerPage);
 
-  // Removed all logic related to Recent Signatures tab
-  // const allSignatures = currentSignatureInfo?.data?.signatures || [];
-  // const filteredSignatures = allSignatures.filter(signature => { ... });
-  // const totalFilteredSignatures = filteredSignatures.length;
-  // const totalSignaturePages = Math.ceil(totalFilteredSignatures / signaturesPerPage);
-  // const indexOfLastSignature = currentPageSignatures * signaturesPerPage;
-  // const indexOfFirstSignature = indexOfLastSignature - signaturesPerPage;
-  // const currentSignatures = filteredSignatures.slice(indexOfFirstSignature, indexOfLastSignature);
-
-  // Removed handlers for Recent Signatures tab
-  // const handleSignaturesPerPageChange = (value: string) => { ... };
-  // const handleSignatureSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => { ... };
-
   return (
     <div className="min-h-screen flex flex-col items-center bg-gray-100 dark:bg-gray-950 p-4">
       <div className="w-full max-w-4xl mx-auto space-y-8 mt-8">
         <Tabs defaultValue="current-info" className="w-full">
-          <TabsList className="grid w-full grid-cols-2"> {/* Changed grid-cols-3 to grid-cols-2 */}
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="current-info">Current Signature Info</TabsTrigger>
-            {/* Removed Recent Signatures TabTrigger */}
             <TabsTrigger value="update-history">Update History</TabsTrigger>
           </TabsList>
 
@@ -164,24 +141,6 @@ const ClamAVInfo: React.FC = () => {
               handleUpdateSignatures={handleUpdateSignatures}
             />
           </TabsContent>
-
-          {/* Removed Recent Signatures TabContent */}
-          {/* <TabsContent value="recent-signatures">
-            <RecentSignaturesTable
-              allSignatures={allSignatures}
-              loadingCurrentInfo={loadingCurrentInfo}
-              errorCurrentInfo={errorCurrentInfo}
-              signatureSearchTerm={signatureSearchTerm}
-              handleSignatureSearchChange={handleSignatureSearchChange}
-              signaturesPerPage={signaturesPerPage}
-              handleSignaturesPerPageChange={handleSignaturesPerPageChange}
-              currentPageSignatures={currentPageSignatures}
-              setCurrentPageSignatures={setCurrentPageSignatures}
-              totalSignaturePages={totalSignaturePages}
-              currentSignatures={currentSignatures}
-              totalFilteredSignatures={totalFilteredSignatures}
-            />
-          </TabsContent> */}
 
           <TabsContent value="update-history">
             <UpdateHistoryTable
