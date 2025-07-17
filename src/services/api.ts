@@ -58,24 +58,22 @@ interface ErrorResponse {
 }
 
 // New interfaces for ClamAV signature management
-interface SignatureDatabase {
-  name: string;
+interface SignatureDatabaseInfo { // This is for the /api/signatures/info endpoint's 'signatures' array
+  database: string;
   signatures: number;
-  lastUpdate: string; // date-time string
 }
 
-interface CurrentSignatureInfo {
+interface CurrentSignatureInfoData { // This is the 'data' object from /api/signatures/info
   version: string;
-  databases: SignatureDatabase[]; // Now required and directly from API
-  lastUpdate: string; // date-time string
+  signatures: SignatureDatabaseInfo[];
   totalSignatures: number;
+  lastUpdate: string; // date-time string
 }
 
-interface SignatureInfoResponse {
+interface SignatureInfoResponse { // Response for /api/signatures/info
   success: boolean;
   timestamp: string; // date-time string
-  current: CurrentSignatureInfo; // Changed from 'data' to 'current'
-  updateHistory: SignatureUpdateHistoryEntry[]; // Added directly to root
+  data: CurrentSignatureInfoData; // The main data object is now under 'data'
 }
 
 interface SignatureUpdateHistoryEntry {
@@ -89,7 +87,6 @@ interface SignatureUpdateHistoryEntry {
   file_size: number | null;
 }
 
-// Corrected SignatureHistoryResponse to match swagger.json
 interface SignatureHistoryResponse {
   success: boolean;
   data: {
@@ -117,6 +114,22 @@ interface SignatureUpdateResponse {
   before: { totalSignatures: number };
   after: { totalSignatures: number };
   message: string;
+}
+
+// New interfaces for /api/signatures/list
+interface SignatureListItem {
+  name: string;
+  signatures: number;
+  version: string;
+  buildTime: string;
+  filePath: string;
+}
+
+interface SignatureListResponse {
+  success: boolean;
+  timestamp: string;
+  totalSignatures: number;
+  databases: SignatureListItem[];
 }
 
 
@@ -169,13 +182,21 @@ export const api = {
     return response.json();
   },
 
-  // Updated API function for ClamAV signature history to use 'offset' directly
+  getSignatureList: async (): Promise<SignatureListResponse> => {
+    const response = await fetch(`${BASE_URL}/api/signatures/list`);
+    if (!response.ok) {
+      const errorData: ErrorResponse = await response.json();
+      throw new Error(errorData.message || errorData.error || "Failed to fetch signature list");
+    }
+    return response.json();
+  },
+
   getSignatureHistory: async (
     limit: number = 10,
-    offset: number = 0 // Changed from page to offset
+    offset: number = 0
   ): Promise<SignatureHistoryResponse> => {
     const response = await fetch(
-      `${BASE_URL}/api/signatures/history?limit=${limit}&offset=${offset}` // Changed parameter name in URL
+      `${BASE_URL}/api/signatures/history?limit=${limit}&offset=${offset}`
     );
     if (!response.ok) {
       const errorData: ErrorResponse = await response.json();
@@ -204,11 +225,13 @@ export type {
   HealthResponse,
   SingleScanResponse,
   ScanLogEntry,
-  ScanHistoryResponse as ScanHistoryApiResponse, // Renamed to avoid conflict with new SignatureHistoryResponse
+  ScanHistoryResponse as ScanHistoryApiResponse,
   SignatureInfoResponse,
-  SignatureDatabase,
-  CurrentSignatureInfo,
+  SignatureDatabaseInfo, // Exported for use in CurrentSignatureInfoCard
+  CurrentSignatureInfoData, // Exported for use in CurrentSignatureInfoCard
   SignatureUpdateHistoryEntry,
-  SignatureHistoryResponse, // This is the new, corrected one
+  SignatureHistoryResponse,
   SignatureUpdateResponse,
+  SignatureListItem, // Exported for use in CurrentSignatureInfoCard
+  SignatureListResponse,
 };

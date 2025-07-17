@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { api, SignatureInfoResponse, SignatureUpdateHistoryEntry, SignatureUpdateResponse, SignatureHistoryResponse } from "@/services/api";
+import { api, SignatureInfoResponse, SignatureUpdateHistoryEntry, SignatureUpdateResponse, SignatureHistoryResponse, SignatureListResponse } from "@/services/api";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CurrentSignatureInfoCard from "@/components/clamav/CurrentSignatureInfoCard";
@@ -12,6 +12,7 @@ const DEFAULT_ITEMS_PER_PAGE = 10; // Default items per page for both sections
 
 const ClamAVInfo: React.FC = () => {
   const [currentSignatureInfo, setCurrentSignatureInfo] = useState<SignatureInfoResponse | null>(null);
+  const [signatureList, setSignatureList] = useState<SignatureListResponse | null>(null); // New state for /api/signatures/list
   const [signatureHistory, setSignatureHistory] = useState<SignatureUpdateHistoryEntry[]>([]);
   const [totalHistoryCount, setTotalHistoryCount] = useState(0);
   const [loadingCurrentInfo, setLoadingCurrentInfo] = useState(true);
@@ -29,19 +30,32 @@ const ClamAVInfo: React.FC = () => {
     setLoadingCurrentInfo(true);
     setErrorCurrentInfo(null);
     try {
-      const data = await api.getSignatureInfo();
-      console.log("Fetched current signature info:", data);
+      const infoData = await api.getSignatureInfo(); // Call /api/signatures/info
+      const listData = await api.getSignatureList(); // Call /api/signatures/list
+
+      console.log("Fetched current signature info (from /info):", infoData);
+      console.log("Fetched signature list (from /list):", listData);
       
-      if (data && data.current) {
-        setCurrentSignatureInfo(data);
+      if (infoData && infoData.data) { // Check for 'data' property
+        setCurrentSignatureInfo(infoData);
       } else {
-        const errorMessage = "API response for current signature info is missing or has an invalid 'current' object.";
-        console.error(errorMessage, data);
+        const errorMessage = "API response for current signature info is missing or has an invalid 'data' object.";
+        console.error(errorMessage, infoData);
         setErrorCurrentInfo(errorMessage);
         toast.error(errorMessage);
       }
+
+      if (listData && listData.databases) {
+        setSignatureList(listData);
+      } else {
+        const errorMessage = "API response for signature list is missing or has an invalid 'databases' array.";
+        console.error(errorMessage, listData);
+        setErrorCurrentInfo(prev => prev ? `${prev}\n${errorMessage}` : errorMessage); // Append error
+        toast.error(errorMessage);
+      }
+
     } catch (err: any) {
-      console.error("Error fetching current signature info:", err);
+      console.error("Error fetching current signature info or list:", err);
       setErrorCurrentInfo(`Failed to load current signature info: ${err.message}`);
       toast.error(`Failed to load current signature info: ${err.message}`);
     } finally {
@@ -97,7 +111,7 @@ const ClamAVInfo: React.FC = () => {
       const response: SignatureUpdateResponse = await api.updateSignatures();
       if (response.success) {
         toast.success("ClamAV signatures updated successfully!");
-        fetchSignatureInfo(); // Re-fetch current info to get latest version/counts
+        fetchSignatureInfo(); // Re-fetch current info and list to get latest version/counts
         fetchSignatureHistory(currentPageHistory, historyItemsPerPage, historySearchTerm); // Re-fetch history
       } else {
         toast.error(`Signature update failed: ${response.message || "Unknown error"}`);
@@ -135,6 +149,7 @@ const ClamAVInfo: React.FC = () => {
           <TabsContent value="current-info">
             <CurrentSignatureInfoCard
               currentSignatureInfo={currentSignatureInfo}
+              signatureList={signatureList} // Pass the new signatureList
               loadingCurrentInfo={loadingCurrentInfo}
               errorCurrentInfo={errorCurrentInfo}
               updatingSignatures={updatingSignatures}
