@@ -64,20 +64,11 @@ interface SignatureDatabase {
   lastUpdate: string; // date-time string
 }
 
-interface SignatureEntry { // New interface for individual signatures
-  name: string;
-  type: string;
-  database: string;
-  dateAdded: string; // date-time string
-  status: string;
-  isRepresentative: boolean;
-  representativeOf: number;
-}
+// Removed SignatureEntry as it's no longer part of /api/signatures/info response
 
 interface CurrentSignatureInfo {
   version: string;
-  databases?: SignatureDatabase[]; // Made optional
-  signatures?: SignatureEntry[]; // Added new signatures array
+  databases: SignatureDatabase[]; // Now required and directly from API
   lastUpdate: string; // date-time string
   totalSignatures: number;
 }
@@ -85,7 +76,8 @@ interface CurrentSignatureInfo {
 interface SignatureInfoResponse {
   success: boolean;
   timestamp: string; // date-time string
-  data: CurrentSignatureInfo;
+  current: CurrentSignatureInfo; // Changed from 'data' to 'current'
+  updateHistory: SignatureUpdateHistoryEntry[]; // Added directly to root
 }
 
 interface SignatureUpdateHistoryEntry {
@@ -101,15 +93,10 @@ interface SignatureUpdateHistoryEntry {
 
 interface SignatureHistoryResponse {
   success: boolean;
-  timestamp: string;
-  data: {
-    updates: SignatureUpdateHistoryEntry[];
-    pagination: {
-      total: number;
-      limit: number;
-      offset: number; // Keep offset here as it's what the API *returns*
-    };
-  };
+  count: number; // Total count of records
+  limit: number;
+  offset: number;
+  data: SignatureUpdateHistoryEntry[]; // Direct array of history entries
 }
 
 interface SignatureUpdateResult {
@@ -177,14 +164,13 @@ export const api = {
     return response.json();
   },
 
-  // Updated API function for ClamAV signature history to use 'page' instead of 'offset'
+  // Updated API function for ClamAV signature history to use 'offset' directly
   getSignatureHistory: async (
     limit: number = 10,
-    page: number = 1, // Changed from offset to page
-    search: string = ""
+    offset: number = 0 // Changed from page to offset
   ): Promise<SignatureHistoryResponse> => {
     const response = await fetch(
-      `${BASE_URL}/api/signatures/history?limit=${limit}&page=${page}&search=${encodeURIComponent(search)}` // Changed parameter name in URL
+      `${BASE_URL}/api/signatures/history?limit=${limit}&offset=${offset}` // Changed parameter name in URL
     );
     if (!response.ok) {
       const errorData: ErrorResponse = await response.json();
@@ -216,7 +202,7 @@ export type {
   ScanHistoryResponse,
   SignatureInfoResponse,
   SignatureDatabase,
-  SignatureEntry, // Export the new interface
+  // SignatureEntry removed
   CurrentSignatureInfo,
   SignatureUpdateHistoryEntry,
   SignatureHistoryResponse,

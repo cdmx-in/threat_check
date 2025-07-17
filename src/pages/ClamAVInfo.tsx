@@ -6,7 +6,7 @@ import { api, SignatureInfoResponse, SignatureUpdateHistoryEntry, SignatureUpdat
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CurrentSignatureInfoCard from "@/components/clamav/CurrentSignatureInfoCard";
-import RecentSignaturesTable from "@/components/clamav/RecentSignaturesTable";
+// Removed import for RecentSignaturesTable
 import UpdateHistoryTable from "@/components/clamav/UpdateHistoryTable";
 
 const DEFAULT_ITEMS_PER_PAGE = 10; // Default items per page for both sections
@@ -26,10 +26,10 @@ const ClamAVInfo: React.FC = () => {
   const [currentPageHistory, setCurrentPageHistory] = useState(1);
   const [historyItemsPerPage, setHistoryItemsPerPage] = useState(DEFAULT_ITEMS_PER_PAGE);
 
-  // State for Recent Signatures tab
-  const [signatureSearchTerm, setSignatureSearchTerm] = useState("");
-  const [signaturesPerPage, setSignaturesPerPage] = useState(DEFAULT_ITEMS_PER_PAGE);
-  const [currentPageSignatures, setCurrentPageSignatures] = useState(1);
+  // Removed states for Recent Signatures tab:
+  // const [signatureSearchTerm, setSignatureSearchTerm] = useState("");
+  // const [signaturesPerPage, setSignaturesPerPage] = useState(DEFAULT_ITEMS_PER_PAGE);
+  // const [currentPageSignatures, setCurrentPageSignatures] = useState(1);
 
   const fetchSignatureInfo = useCallback(async () => {
     setLoadingCurrentInfo(true);
@@ -38,10 +38,12 @@ const ClamAVInfo: React.FC = () => {
       const data = await api.getSignatureInfo();
       console.log("Fetched current signature info:", data);
       
-      if (data && data.data) {
+      if (data && data.current) { // Check for 'current' property
         setCurrentSignatureInfo(data);
+        // The updateHistory is now directly on the root of SignatureInfoResponse
+        // No need to set signatureHistory here, as it's fetched by fetchSignatureHistory
       } else {
-        const errorMessage = "API response for current signature info is missing or has an invalid 'data' object.";
+        const errorMessage = "API response for current signature info is missing or has an invalid 'current' object.";
         console.error(errorMessage, data);
         setErrorCurrentInfo(errorMessage);
         toast.error(errorMessage);
@@ -59,23 +61,24 @@ const ClamAVInfo: React.FC = () => {
     setLoadingHistory(true);
     setErrorHistory(null);
     try {
-      // Pass page directly, no offset calculation needed here
-      const response: SignatureHistoryApiResponse = await api.getSignatureHistory(limit, page, search);
+      // Convert page to offset for the API call
+      const offset = (page - 1) * limit;
+      const response: SignatureHistoryApiResponse = await api.getSignatureHistory(limit, offset);
       
-      if (response && response.data && Array.isArray(response.data.updates) && typeof response.data.pagination.total === 'number') {
-        setSignatureHistory(response.data.updates);
-        setTotalHistoryCount(response.data.pagination.total);
+      if (response && Array.isArray(response.data) && typeof response.count === 'number') {
+        setSignatureHistory(response.data);
+        setTotalHistoryCount(response.count);
         setErrorHistory(null);
         console.log("Update History Pagination Data:", {
           currentPage: page,
           itemsPerPage: limit,
-          totalItems: response.data.pagination.total,
-          totalPages: Math.ceil(response.data.pagination.total / limit),
-          fetchedItemsCount: response.data.updates.length,
+          totalItems: response.count,
+          totalPages: Math.ceil(response.count / limit),
+          fetchedItemsCount: response.data.length,
         });
       } else {
         console.warn("API response for signature history was malformed. Received:", response);
-        setErrorHistory("Invalid data format received for signature history. Expected an object with 'data.updates' (array) and 'data.pagination.total' properties.");
+        setErrorHistory("Invalid data format received for signature history. Expected an object with 'data' (array) and 'count' properties.");
         setSignatureHistory([]);
         setTotalHistoryCount(0);
       }
@@ -103,8 +106,8 @@ const ClamAVInfo: React.FC = () => {
       const response: SignatureUpdateResponse = await api.updateSignatures();
       if (response.success) {
         toast.success("ClamAV signatures updated successfully!");
-        fetchSignatureInfo();
-        fetchSignatureHistory(currentPageHistory, historyItemsPerPage, historySearchTerm);
+        fetchSignatureInfo(); // Re-fetch current info to get latest version/counts
+        fetchSignatureHistory(currentPageHistory, historyItemsPerPage, historySearchTerm); // Re-fetch history
       } else {
         toast.error(`Signature update failed: ${response.message || "Unknown error"}`);
       }
@@ -129,42 +132,26 @@ const ClamAVInfo: React.FC = () => {
 
   const totalPagesHistory = Math.ceil(totalHistoryCount / historyItemsPerPage);
 
-  // Logic for Recent Signatures pagination and search
-  const allSignatures = currentSignatureInfo?.data?.signatures || [];
-  const filteredSignatures = allSignatures.filter(signature => {
-    const lowerCaseSearchTerm = signatureSearchTerm.toLowerCase();
-    return (
-      signature.name.toLowerCase().includes(lowerCaseSearchTerm) ||
-      signature.type.toLowerCase().includes(lowerCaseSearchTerm) ||
-      signature.database.toLowerCase().includes(lowerCaseSearchTerm) ||
-      signature.status.toLowerCase().includes(lowerCaseSearchTerm)
-    );
-  });
+  // Removed all logic related to Recent Signatures tab
+  // const allSignatures = currentSignatureInfo?.data?.signatures || [];
+  // const filteredSignatures = allSignatures.filter(signature => { ... });
+  // const totalFilteredSignatures = filteredSignatures.length;
+  // const totalSignaturePages = Math.ceil(totalFilteredSignatures / signaturesPerPage);
+  // const indexOfLastSignature = currentPageSignatures * signaturesPerPage;
+  // const indexOfFirstSignature = indexOfLastSignature - signaturesPerPage;
+  // const currentSignatures = filteredSignatures.slice(indexOfFirstSignature, indexOfLastSignature);
 
-  const totalFilteredSignatures = filteredSignatures.length;
-  const totalSignaturePages = Math.ceil(totalFilteredSignatures / signaturesPerPage);
-  const indexOfLastSignature = currentPageSignatures * signaturesPerPage;
-  const indexOfFirstSignature = indexOfLastSignature - signaturesPerPage;
-  const currentSignatures = filteredSignatures.slice(indexOfFirstSignature, indexOfLastSignature);
-
-  // Handlers for Recent Signatures tab
-  const handleSignaturesPerPageChange = (value: string) => {
-    setSignaturesPerPage(Number(value));
-    setCurrentPageSignatures(1); // Reset to first page when items per page changes
-  };
-
-  const handleSignatureSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSignatureSearchTerm(e.target.value);
-    setCurrentPageSignatures(1); // Reset to first page when search term changes
-  };
+  // Removed handlers for Recent Signatures tab
+  // const handleSignaturesPerPageChange = (value: string) => { ... };
+  // const handleSignatureSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => { ... };
 
   return (
     <div className="min-h-screen flex flex-col items-center bg-gray-100 dark:bg-gray-950 p-4">
       <div className="w-full max-w-4xl mx-auto space-y-8 mt-8">
         <Tabs defaultValue="current-info" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2"> {/* Changed grid-cols-3 to grid-cols-2 */}
             <TabsTrigger value="current-info">Current Signature Info</TabsTrigger>
-            <TabsTrigger value="recent-signatures">Recent Signatures</TabsTrigger>
+            {/* Removed Recent Signatures TabTrigger */}
             <TabsTrigger value="update-history">Update History</TabsTrigger>
           </TabsList>
 
@@ -178,7 +165,8 @@ const ClamAVInfo: React.FC = () => {
             />
           </TabsContent>
 
-          <TabsContent value="recent-signatures">
+          {/* Removed Recent Signatures TabContent */}
+          {/* <TabsContent value="recent-signatures">
             <RecentSignaturesTable
               allSignatures={allSignatures}
               loadingCurrentInfo={loadingCurrentInfo}
@@ -193,7 +181,7 @@ const ClamAVInfo: React.FC = () => {
               currentSignatures={currentSignatures}
               totalFilteredSignatures={totalFilteredSignatures}
             />
-          </TabsContent>
+          </TabsContent> */}
 
           <TabsContent value="update-history">
             <UpdateHistoryTable

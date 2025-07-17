@@ -71,19 +71,19 @@ const CurrentSignatureInfoCard: React.FC<CurrentSignatureInfoCardProps> = ({
               <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
                 <p className="text-sm text-gray-500 dark:text-gray-400">ClamAV Version:</p>
                 <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                  {currentSignatureInfo.data.version}
+                  {currentSignatureInfo.current.version}
                 </p>
               </div>
               <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
                 <p className="text-sm text-gray-500 dark:text-gray-400">Total Signatures:</p>
                 <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                  {currentSignatureInfo.data.totalSignatures.toLocaleString()}
+                  {currentSignatureInfo.current.totalSignatures.toLocaleString()}
                 </p>
               </div>
               <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Last Overall Update ({getTimeZoneAbbreviation(new Date(currentSignatureInfo.data.lastUpdate), localTimeZone)}):</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Last Overall Update ({getTimeZoneAbbreviation(new Date(currentSignatureInfo.current.lastUpdate), localTimeZone)}):</p>
                 <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                  {format(new Date(currentSignatureInfo.data.lastUpdate), 'yyyy-MM-dd hh:mm:ss a')}
+                  {format(new Date(currentSignatureInfo.current.lastUpdate), 'yyyy-MM-dd hh:mm:ss a')}
                 </p>
               </div>
               <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
@@ -105,7 +105,7 @@ const CurrentSignatureInfoCard: React.FC<CurrentSignatureInfoCardProps> = ({
               </div>
             </div>
 
-            {currentSignatureInfo.data.databases && currentSignatureInfo.data.databases.length > 0 && (
+            {currentSignatureInfo.current.databases && currentSignatureInfo.current.databases.length > 0 && (
               <div className="mt-6">
                 <h4 className="text-xl font-semibold mb-4">Individual Signature Databases</h4>
                 <Table>
@@ -113,11 +113,11 @@ const CurrentSignatureInfoCard: React.FC<CurrentSignatureInfoCardProps> = ({
                     <TableRow>
                       <TableHead>Name</TableHead>
                       <TableHead>Signatures</TableHead>
-                      <TableHead>Last Updated ({getTimeZoneAbbreviation(new Date(currentSignatureInfo.data.databases[0].lastUpdate), localTimeZone)})</TableHead>
+                      <TableHead>Last Updated ({getTimeZoneAbbreviation(new Date(currentSignatureInfo.current.databases[0].lastUpdate), localTimeZone)})</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {currentSignatureInfo.data.databases.map((db, index) => (
+                    {currentSignatureInfo.current.databases.map((db, index) => (
                       <TableRow key={index}>
                         <TableCell className="font-medium">{db.name}</TableCell>
                         <TableCell>{db.signatures.toLocaleString()}</TableCell>
