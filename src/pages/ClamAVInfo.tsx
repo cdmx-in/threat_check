@@ -68,8 +68,8 @@ const ClamAVInfo: React.FC = () => {
     setLoadingHistory(true);
     setErrorHistory(null);
     try {
-      const offset = (page - 1) * limit;
-      const response: SignatureHistoryResponse = await api.getSignatureHistory(limit, offset);
+      // Pass page directly instead of calculating offset
+      const response: SignatureHistoryResponse = await api.getSignatureHistory(limit, page);
       
       // Correctly parse the response based on backend/src/app.js and swagger.json
       if (response && response.data && Array.isArray(response.data.updates) && typeof response.data.pagination.total === 'number') {

@@ -194,10 +194,10 @@ export const api = {
 
   getSignatureHistory: async (
     limit: number = 10,
-    offset: number = 0
+    page: number = 1 // Changed from offset to page
   ): Promise<SignatureHistoryResponse> => {
     const response = await fetch(
-      `${BASE_URL}/api/signatures/history?limit=${limit}&offset=${offset}`
+      `${BASE_URL}/api/signatures/history?limit=${limit}&page=${page}` // Changed URL construction
     );
     if (!response.ok) {
       const errorData: ErrorResponse = await response.json();
