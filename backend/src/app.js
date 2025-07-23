@@ -21,6 +21,11 @@ const PORT = process.env.PORT || 3000;
 // Initialize database
 const database = new Database();
 
+const compiledExts = process.env.COMPILED_EXTS ? process.env.COMPILED_EXTS.split(',').map(s => s.trim()) : ['.cvd', '.cld'];
+const rawExts = process.env.RAW_EXTS ? process.env.RAW_EXTS.split(',').map(s => s.trim()) : ['.hdb', '.ndb', '.ldb', '.ign2'];
+
+const clamavDir = '/var/lib/clamav';
+
 // Middleware
 app.use(helmet());
 app.use(cors());
@@ -54,13 +59,13 @@ const upload = multer({
 
 // Helper function to cleanup uploaded files
 function cleanupFile(filePath) {
-  try {
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    try {
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
+    } catch (error) {
+        console.error('Error cleaning up file:', error);
     }
-  } catch (error) {
-    console.error('Error cleaning up file:', error);
-  }
 }
 
 // ClamAV helper functions
@@ -100,53 +105,47 @@ async function getClamAVVersion() {
 
 async function getSignatureInfo() {
     try {
-        const version = await getClamAVVersion();
+        const { stdout: versionOutput } = await execAsync('clamscan --version');
 
-        // Get signature counts from database info instead of listing all signatures
-        // Handle both .cvd and .cld formats
-        const databases = [
-            '/var/lib/clamav/main.cvd',
-            '/var/lib/clamav/daily.cvd',
-            '/var/lib/clamav/daily.cld',
-            '/var/lib/clamav/bytecode.cvd'
-        ];
+        const allFiles = fs.readdirSync(clamavDir);
+        const databases = allFiles
+            .filter(file => [...compiledExts, ...rawExts].includes(path.extname(file)))
+            .map(file => path.join(clamavDir, file));
 
         let totalSignatures = 0;
         let signaturesInfo = [];
 
         for (const db of databases) {
+            const ext = path.extname(db);
+            const base = path.basename(db);
+            let signatures = 0;
+
             try {
-                // Check if file exists first
-                if (!fs.existsSync(db)) {
-                    continue;
-                }
-
-                const { stdout } = await execAsync(`sigtool --info "${db}"`);
-                const lines = stdout.split('\n');
-                let signatures = 0;
-
-                for (const line of lines) {
-                    if (line.startsWith('Signatures:')) {
-                        signatures = parseInt(line.split(':')[1].trim()) || 0;
-                        break;
-                    }
+                if (compiledExts.includes(ext)) {
+                    const { stdout } = await execAsync(`sigtool --info "${db}"`);
+                    const line = stdout.split('\n').find(l => l.startsWith('Signatures:'));
+                    signatures = line ? parseInt(line.split(':')[1].trim()) || 0 : 0;
+                } else if (rawExts.includes(ext)) {
+                    const contents = fs.readFileSync(db, 'utf-8');
+                    const lines = contents.split('\n');
+                    signatures = lines.filter(line =>
+                        line.trim() !== '' && !line.trim().startsWith('#')
+                    ).length;
                 }
 
                 totalSignatures += signatures;
-                signaturesInfo.push({
-                    database: db.split('/').pop(),
-                    signatures: signatures
-                });
-                console.log(`Database ${db}: ${signatures} signatures`);
+                signaturesInfo.push({ database: base, signatures });
+
+                console.log(`Database ${base}: ${signatures} signatures`);
             } catch (error) {
-                console.log(`Cannot read ${db}: ${error.message}`);
+                console.warn(`Cannot process ${base}: ${error.message}`);
             }
         }
 
         return {
-            version: version,
+            version: versionOutput.trim(),
             signatures: signaturesInfo,
-            totalSignatures: totalSignatures,
+            totalSignatures,
             lastUpdate: new Date().toISOString()
         };
     } catch (error) {
@@ -687,119 +686,130 @@ app.get('/', (req, res) => {
 // Get ClamAV signature counts from each database
 app.get('/api/signatures/list', async (req, res) => {
     try {
-        // Map database names to file paths, handle both .cvd and .cld formats
-        const databases = [
-            { name: 'main', path: '/var/lib/clamav/main.cvd' },
-            { name: 'daily', paths: ['/var/lib/clamav/daily.cvd', '/var/lib/clamav/daily.cld'] },
-            { name: 'bytecode', path: '/var/lib/clamav/bytecode.cvd' }
-        ];
+        const allFiles = fs.readdirSync(clamavDir);
 
-        let totalSignatures = 0;
-        let databaseInfo = [];
+        const databases = await Promise.all(
+            allFiles
+                .filter(file => compiledExts.includes(path.extname(file)) || rawExts.includes(path.extname(file)))
+                .map(async file => {
+                    const fullPath = path.join(clamavDir, file);
+                    const ext = path.extname(file);
+                    const name = path.basename(file, ext);
 
-        for (const db of databases) {
-            try {
-                let dbPath = null;
-                let stdout = null;
+                    if (compiledExts.includes(ext)) {
+                        try {
+                            const { stdout } = await execAsync(`sigtool --info "${fullPath}"`);
+                            const lines = stdout.split('\n');
 
-                // Handle databases with multiple possible paths (like daily.cvd vs daily.cld)
-                if (db.paths) {
-                    for (const path of db.paths) {
-                        if (fs.existsSync(path)) {
-                            dbPath = path;
-                            break;
+                            let signatures = 0;
+                            let version = 'unknown';
+                            let buildTime = 'unknown';
+                            console.log(`Processing compiled database: ${fullPath}`, lines);
+
+                            for (const line of lines) {
+                                if (line.startsWith('Signatures:')) {
+                                    signatures = parseInt(line.split(':')[1].trim()) || 0;
+                                } else if (line.startsWith('Version:')) {
+                                    version = line.split(':')[1].trim();
+                                } else if (line.startsWith('Build time:')) {
+                                    buildTime = line.split(':')[1].trim();
+                                }
+                            }
+
+                            return {
+                                name,
+                                filePath: file,
+                                signatures,
+                                version,
+                                buildTime
+                            };
+
+                        } catch (error) {
+                            console.log(error);
+                            return {
+                                name,
+                                filePath: file,
+                                signatures: 0,
+                                version: 'error',
+                                buildTime: 'error',
+                                error: error.message
+                            };
                         }
+
+                    } else {
+                        const contents = fs.readFileSync(fullPath, 'utf-8');
+                        const lines = contents.split('\n');
+                        signatures = lines.filter(line =>
+                            line.trim() !== '' && !line.trim().startsWith('#')
+                        ).length;
+                        // raw file, use last modified time
+                        const stats = fs.statSync(fullPath);
+                        return {
+                            name,
+                            filePath: file,
+                            signatures: signatures,
+                            version: 'raw',
+                            buildTime: stats.mtime.toLocaleString('en-GB', {
+                                timeZone: 'Asia/Kolkata',
+                                year: 'numeric', month: '2-digit', day: '2-digit',
+                                hour: '2-digit', minute: '2-digit', second: '2-digit',
+                                hour12: true
+                            }).replace(',', '')
+                        };
                     }
-                } else if (fs.existsSync(db.path)) {
-                    dbPath = db.path;
-                }
+                })
+        );
 
-                if (!dbPath) {
-                    throw new Error(`Database file not found for ${db.name}`);
-                }
-
-                const result = await execAsync(`sigtool --info "${dbPath}"`);
-                stdout = result.stdout;
-
-                const lines = stdout.split('\n');
-                let signatures = 0;
-                let version = 'unknown';
-                let buildTime = 'unknown';
-
-                for (const line of lines) {
-                    if (line.startsWith('Signatures:')) {
-                        signatures = parseInt(line.split(':')[1].trim()) || 0;
-                    } else if (line.startsWith('Version:')) {
-                        version = line.split(':')[1].trim();
-                    } else if (line.startsWith('Build time:')) {
-                        buildTime = line.split(':', 2)[1].trim();
-                    }
-                }
-
-                totalSignatures += signatures;
-                databaseInfo.push({
-                    name: db.name,
-                    signatures: signatures,
-                    version: version,
-                    buildTime: buildTime,
-                    filePath: dbPath.split('/').pop()
-                });
-
-            } catch (error) {
-                console.log(`Cannot read database ${db.name}: ${error.message}`);
-                databaseInfo.push({
-                    name: db.name,
-                    signatures: 0,
-                    version: 'unknown',
-                    buildTime: 'unknown',
-                    error: error.message
-                });
-            }
-        }
+        const totalSignatures = databases.reduce((sum, db) => sum + (db.signatures || 0), 0);
 
         res.json({
             success: true,
             timestamp: new Date().toISOString(),
-            totalSignatures: totalSignatures,
-            databases: databaseInfo
+            totalSignatures,
+            databases
         });
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+
+    } catch (err) {
+        res.status(500).json({
+            success: false,
+            error: err.message
+        });
     }
 });
 
+
 // Initialize database and start server
 async function startServer() {
-  try {
-    await database.connect();
-    console.log('Database connected successfully');
+    try {
+        await database.connect();
+        console.log('Database connected successfully');
 
-    app.listen(PORT, () => {
-      console.log(`🚀 ThreatCheck API server running on port ${PORT} (Real ClamAV Mode)`);
-      console.log(`📊 Health check: http://localhost:${PORT}/health`);
-      console.log(`📄 API Documentation: http://localhost:${PORT}/`);
-      console.log(`🔬 Signature Info: GET http://localhost:${PORT}/api/signatures/info`);
-      console.log(`🔄 Signature Update: POST http://localhost:${PORT}/api/signatures/update`);
-      console.log(`📈 Signature History: GET http://localhost:${PORT}/api/signatures/history`);
-      console.log(`🔍 File Scan: POST http://localhost:${PORT}/api/scan/file`);
-      console.log('');
-      console.log('✅ Using REAL ClamAV data - No more mock responses!');
-    });
-  } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
-  }
+        app.listen(PORT, () => {
+            console.log(`🚀 ThreatCheck API server running on port ${PORT} (Real ClamAV Mode)`);
+            console.log(`📊 Health check: http://localhost:${PORT}/health`);
+            console.log(`📄 API Documentation: http://localhost:${PORT}/`);
+            console.log(`🔬 Signature Info: GET http://localhost:${PORT}/api/signatures/info`);
+            console.log(`🔄 Signature Update: POST http://localhost:${PORT}/api/signatures/update`);
+            console.log(`📈 Signature History: GET http://localhost:${PORT}/api/signatures/history`);
+            console.log(`🔍 File Scan: POST http://localhost:${PORT}/api/scan/file`);
+            console.log('');
+            console.log('✅ Using REAL ClamAV data - No more mock responses!');
+        });
+    } catch (error) {
+        console.error('Failed to start server:', error);
+        process.exit(1);
+    }
 }
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('Shutting down gracefully...');
-  process.exit(0);
+    console.log('Shutting down gracefully...');
+    process.exit(0);
 });
 
 process.on('SIGINT', () => {
-  console.log('Shutting down gracefully...');
-  process.exit(0);
+    console.log('Shutting down gracefully...');
+    process.exit(0);
 });
 
 startServer();

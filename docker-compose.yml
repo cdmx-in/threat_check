@@ -1,0 +1,13 @@
+version: '3.8'
+services:
+  frontend:
+    image: threat-check-frontend
+    container_name: threat-check-frontend
+    ports:
+      - "8124:80"
+    networks:
+      - threatcheck-network
+
+networks:
+  threatcheck-network:
+    driver: bridge
