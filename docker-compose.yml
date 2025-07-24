@@ -1,12 +1,82 @@
 version: '3.8'
 services:
-  frontend:
-    image: threat-check-frontend
-    container_name: threat-check-frontend
+  threatcheck-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile.ui
+    image: threat-check-ui
+    container_name: threat-check-ui
     ports:
       - "8124:80"
     networks:
       - threatcheck-network
+
+  threatcheck-api:
+    build:
+      # Use the Dockerfile for the backend service
+      context: ./backend
+      dockerfile: Dockerfile.backend
+    container_name: threatcheck-api
+    ports:
+      - "3765:3000"
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=threatcheck-postgres
+      - DB_PORT=5432
+      - DB_NAME=threatcheck
+      - DB_USER=threatcheck_user
+      - DB_PASSWORD=threatcheck_password
+      - CLAM_HOST=threatcheck-clamav
+      - CLAM_PORT=3310
+      - COMPILED_EXTS=.cvd,.cld
+      - RAW_EXTS=.hdb,.ndb,.ign2
+    volumes:
+      - ./backend/uploads:/tmp/uploads
+      - clamav_data:/var/lib/clamav:ro
+    depends_on:
+      - threatcheck-postgres
+      - threatcheck-clamav
+    networks:
+      - threatcheck-network
+    restart: unless-stopped
+
+  threatcheck-postgres:
+    image: postgres:15-alpine
+    container_name: threatcheck-postgres
+    environment:
+      POSTGRES_DB: threatcheck
+      POSTGRES_USER: threatcheck_user
+      POSTGRES_PASSWORD: threatcheck_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - threatcheck-network
+
+  threatcheck-clamav:
+    image: clamav/clamav:latest
+    container_name: threatcheck-clamav
+    ports:
+      - "3310:3310"
+    volumes:
+      - clamav_data:/var/lib/clamav
+      - ./backend/freshclam.conf:/etc/clamav/freshclam.conf
+      - ./backend/clamav-entrypoint.sh:/entrypoint.sh
+    entrypoint: [ "sh", "/entrypoint.sh" ]
+    networks:
+      - threatcheck-network
+    healthcheck:
+      test: ["CMD", "clamdscan", "--ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+volumes:
+  postgres_data:
+  clamav_data:
 
 networks:
   threatcheck-network:
